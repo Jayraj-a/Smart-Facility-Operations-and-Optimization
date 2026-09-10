@@ -1,0 +1,26 @@
+{
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "confusion_matrix": [
+        [
+            674,
+            0
+        ],
+        [
+            0,
+            21
+        ]
+    ],
+    "training_rows": 2085,
+    "testing_rows": 695,
+    "features": [
+        "electricity_kwh",
+        "water_liters",
+        "hvac_kwh",
+        "lighting_kwh",
+        "temperature_c",
+        "occupancy"
+    ]
+}

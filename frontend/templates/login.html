@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Sign In | FacilityOps AI
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+
+</head>
+
+
+<body class="login-body">
+
+<div class="login-layout">
+
+    <section class="login-visual">
+
+        <div class="brand-mark">
+            ⚡
+        </div>
+
+        <div class="login-brand">
+
+            <span class="eyebrow">
+                SMART FACILITY OPERATIONS
+            </span>
+
+            <h1>
+                FacilityOps
+                <span>AI</span>
+            </h1>
+
+            <p>
+                Agentic intelligence for smarter,
+                safer and more efficient buildings.
+            </p>
+
+        </div>
+
+
+        <div class="login-features">
+
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <div>
+                    <strong>Energy Intelligence</strong>
+                    <p>
+                        Real-time utility monitoring and analytics.
+                    </p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">◉</div>
+                <div>
+                    <strong>Anomaly Detection</strong>
+                    <p>
+                        Identify abnormal consumption behaviour.
+                    </p>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="feature-icon">✦</div>
+                <div>
+                    <strong>AI Recommendations</strong>
+                    <p>
+                        Actionable facility optimisation guidance.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="orb orb-one"></div>
+        <div class="orb orb-two"></div>
+
+    </section>
+
+
+    <section class="login-panel">
+
+        <form
+            class="login-card"
+            action="/login"
+            method="post"
+        >
+
+            <div class="login-mobile-logo">
+                ⚡ FacilityOps AI
+            </div>
+
+            <span class="eyebrow">
+                SECURE ACCESS
+            </span>
+
+            <h2>
+                Welcome back
+            </h2>
+
+            <p class="login-description">
+                Sign in to access the Smart Facility
+                Energy Intelligence platform.
+            </p>
+
+
+            {% if error %}
+
+            <div class="login-error">
+                {{ error }}
+            </div>
+
+            {% endif %}
+
+
+            <label>
+                Username
+            </label>
+
+            <input
+                name="username"
+                type="text"
+                placeholder="Enter username"
+                required
+                autocomplete="username"
+            >
+
+
+            <label>
+                Password
+            </label>
+
+            <input
+                name="password"
+                type="password"
+                placeholder="Enter password"
+                required
+                autocomplete="current-password"
+            >
+
+
+            <button type="submit">
+                Sign in to dashboard
+                <span>→</span>
+            </button>
+
+
+            <div class="security-note">
+                🔒 Protected facility operations environment
+            </div>
+
+        </form>
+
+    </section>
+
+</div>
+
+</body>
+
+</html>

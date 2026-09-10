@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>FacilityOps AI | Smart Facility Operations</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+
+
+<body>
+
+<div class="app-shell">
+
+    <!-- =========================================================
+         SIDEBAR
+         ========================================================= -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+
+            <div class="logo-icon">
+                ◈
+            </div>
+
+            <div>
+                <h2>
+                    FacilityOps <span>AI</span>
+                </h2>
+
+                <small>
+                    SMART FACILITY OPERATIONS
+                </small>
+            </div>
+
+        </div>
+
+
+        <div class="nav-label">
+            OPERATIONS
+        </div>
+
+
+        <nav>
+
+            <a
+                href="#"
+                class="nav-item active"
+                data-section-target="liveMonitoringSection"
+            >
+                <span>◎</span>
+                Live Monitoring
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="analyticsSection"
+            >
+                <span>◈</span>
+                Energy Analytics
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="assetMonitoringSection"
+            >
+                <span>▣</span>
+                Asset Monitoring
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="equipmentHealthSection"
+            >
+                <span>♥</span>
+                Equipment Health
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="maintenanceScheduleSection"
+            >
+                <span>◷</span>
+                Maintenance Schedule
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="issueCentreSection"
+            >
+                <span>⚠</span>
+                Issue Centre
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="alertsSection"
+            >
+                <span>!</span>
+                Alerts
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="user-card">
+
+                <div class="avatar">
+                    {{ user.full_name[0] }}
+                </div>
+
+                <div>
+                    <strong>
+                        {{ user.full_name }}
+                    </strong>
+
+                    <span>
+                        {{ user.role }}
+                    </span>
+                </div>
+
+            </div>
+
+
+            <a
+                href="/logout"
+                class="logout-button"
+            >
+                Sign out
+            </a>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================================================
+         MAIN CONTENT
+         ========================================================= -->
+
+    <main class="main-content">
+
+        <!-- =====================================================
+             HEADER
+             ===================================================== -->
+
+        <header class="topbar">
+
+            <div>
+
+                <span class="eyebrow">
+                    FACILITY INTELLIGENCE PLATFORM
+                </span>
+
+                <h1>
+                    Smart Facility
+                    <span>Operations</span>
+                </h1>
+
+                <p>
+                    Monitor energy consumption, equipment health,
+                    maintenance requirements and operational issues
+                    from one integrated facility dashboard.
+                </p>
+
+            </div>
+
+
+            <div class="top-status">
+
+                <span class="pulse-dot"></span>
+
+                System Online
+
+            </div>
+
+        </header>
+
+
+        <!-- =====================================================
+             GLOBAL FILTERS
+             ===================================================== -->
+
+        <section class="filter-bar">
+
+            <div class="filter-group">
+
+                <label for="facilitySelect">
+                    Facility
+                </label>
+
+                <select id="facilitySelect">
+
+                    <option value="">
+                        Loading...
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="filter-group">
+
+                <label for="buildingSelect">
+                    Building
+                </label>
+
+                <select id="buildingSelect">
+
+                    <option value="">
+                        All Buildings
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="filter-group">
+
+                <label for="blockSelect">
+                    Block
+                </label>
+
+                <select id="blockSelect">
+
+                    <option value="">
+                        All Blocks
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="updated-box">
+
+                <span>
+                    LAST UPDATED
+                </span>
+
+                <strong id="lastUpdated">
+                    Loading...
+                </strong>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             LIVE MONITORING
+             ===================================================== -->
+
+        <section
+            id="liveMonitoringSection"
+            class="dashboard-section active"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    FACILITY OVERVIEW
+                </span>
+
+                <h2>
+                    Live Monitoring
+                </h2>
+
+                <p>
+                    Monitor facility electricity, HVAC, lighting,
+                    water and occupancy performance.
+                </p>
+
+            </div>
+
+
+            <section class="metric-grid">
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ⚡
+                    </div>
+
+                    <div>
+                        <span>
+                            Electricity
+                        </span>
+
+                        <h3 id="electricityMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            total kWh
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ❄
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg HVAC
+                        </span>
+
+                        <h3 id="hvacMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            kWh
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◉
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg Lighting
+                        </span>
+
+                        <h3 id="lightingMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            kWh
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ♟
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg Occupancy
+                        </span>
+
+                        <h3 id="occupancyMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            people
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◇
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg Water
+                        </span>
+
+                        <h3 id="waterMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            litres
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card alert-card">
+
+                    <div class="metric-icon">
+                        !
+                    </div>
+
+                    <div>
+                        <span>
+                            Flagged Issues
+                        </span>
+
+                        <h3 id="anomalyMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            detected
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                ELECTRICITY TREND
+                            </span>
+
+                            <h2>
+                                Electricity Consumption
+                            </h2>
+                        </div>
+
+
+                        <span class="live-chip">
+                            ● MONITORING
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        id="energyChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                HVAC USAGE
+                            </span>
+
+                            <h2>
+                                HVAC Consumption
+                            </h2>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="hvacChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             ENERGY ANALYTICS
+             ===================================================== -->
+
+        <section
+            id="analyticsSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    ENERGY INTELLIGENCE
+                </span>
+
+                <h2>
+                    Energy Analytics
+                </h2>
+
+                <p>
+                    Analyse energy consumption patterns,
+                    occupancy relationships and building performance.
+                </p>
+
+            </div>
+
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                OCCUPANCY ANALYSIS
+                            </span>
+
+                            <h2>
+                                Occupancy vs Electricity
+                            </h2>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="occupancyChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                BUILDING ANALYSIS
+                            </span>
+
+                            <h2>
+                                Building Energy Comparison
+                            </h2>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="buildingChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             ASSET MONITORING
+             ===================================================== -->
+
+        <section
+            id="assetMonitoringSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    EQUIPMENT OPERATIONS
+                </span>
+
+                <h2>
+                    Asset Monitoring
+                </h2>
+
+                <p>
+                    Monitor equipment sensor conditions,
+                    operating information and asset lifecycle data.
+                    Current equipment readings are simulated.
+                </p>
+
+            </div>
+
+
+            <section class="metric-grid">
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ▣
+                    </div>
+
+                    <div>
+                        <span>
+                            Assets Monitored
+                        </span>
+
+                        <h3 id="maintenanceAssetsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            equipment assets
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ♥
+                    </div>
+
+                    <div>
+                        <span>
+                            Average Health
+                        </span>
+
+                        <h3 id="maintenanceHealthMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            score / 100
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ✓
+                    </div>
+
+                    <div>
+                        <span>
+                            Excellent
+                        </span>
+
+                        <h3 id="excellentAssetsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            assets
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        +
+                    </div>
+
+                    <div>
+                        <span>
+                            Good
+                        </span>
+
+                        <h3 id="goodAssetsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            assets
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        !
+                    </div>
+
+                    <div>
+                        <span>
+                            Warning
+                        </span>
+
+                        <h3 id="warningAssetsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            assets
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card alert-card">
+
+                    <div class="metric-icon">
+                        ⚠
+                    </div>
+
+                    <div>
+                        <span>
+                            Critical
+                        </span>
+
+                        <h3 id="criticalAssetsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            assets
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            ASSET SENSOR DATA
+                        </span>
+
+                        <h2>
+                            Equipment Monitoring
+                        </h2>
+                    </div>
+
+
+                    <span class="live-chip">
+                        SIMULATED DATA
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="assetMonitoringTable"
+                    class="table-wrapper"
+                >
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Assets
+                        </h3>
+
+                        <p>
+                            Retrieving equipment monitoring data...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             EQUIPMENT HEALTH
+             ===================================================== -->
+
+        <section
+            id="equipmentHealthSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    PREDICTIVE MAINTENANCE
+                </span>
+
+                <h2>
+                    Equipment Health
+                </h2>
+
+                <p>
+                    Review equipment health scores,
+                    condition status and predicted maintenance risk.
+                </p>
+
+            </div>
+
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                HEALTH SCORE
+                            </span>
+
+                            <h2>
+                                Asset Health Overview
+                            </h2>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="maintenanceHealthChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                BUILDING HEALTH
+                            </span>
+
+                            <h2>
+                                Building Health Comparison
+                            </h2>
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="maintenanceBuildingChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            EQUIPMENT CONDITION
+                        </span>
+
+                        <h2>
+                            Asset Health Details
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="equipmentHealthTable"
+                    class="table-wrapper"
+                >
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Equipment Health
+                        </h3>
+
+                        <p>
+                            Calculating equipment health scores...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             MAINTENANCE SCHEDULE
+             ===================================================== -->
+
+        <section
+            id="maintenanceScheduleSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    MAINTENANCE PLANNING
+                </span>
+
+                <h2>
+                    Maintenance Schedule
+                </h2>
+
+                <p>
+                    Review predicted maintenance priorities,
+                    recommended service dates and generated work orders.
+                </p>
+
+            </div>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            PREDICTED SCHEDULE
+                        </span>
+
+                        <h2>
+                            Recommended Maintenance
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="maintenanceScheduleTable"
+                    class="table-wrapper"
+                >
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Maintenance Schedule
+                        </h3>
+
+                        <p>
+                            Retrieving predicted maintenance dates...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            WORK MANAGEMENT
+                        </span>
+
+                        <h2>
+                            Maintenance Work Orders
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div id="maintenanceWorkOrders">
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Work Orders
+                        </h3>
+
+                        <p>
+                            Retrieving maintenance work orders...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             ISSUE CENTRE
+             ===================================================== -->
+
+        <section
+            id="issueCentreSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    UNUSUAL USAGE DETECTION
+                </span>
+
+                <h2>
+                    Issue Centre
+                </h2>
+
+                <p>
+                    Review unusual facility usage and
+                    operational consumption issues.
+                </p>
+
+            </div>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            FLAGGED ISSUES
+                        </span>
+
+                        <h2>
+                            Detected Energy Issues
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div id="anomalyTable">
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Issue Centre
+                        </h3>
+
+                        <p>
+                            Analysing facility consumption readings...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             UNIFIED ALERTS
+             ===================================================== -->
+
+        <section
+            id="alertsSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    FACILITY ALERT MANAGEMENT
+                </span>
+
+                <h2>
+                    Alerts
+                </h2>
+
+                <p>
+                    Review energy-consumption and equipment-maintenance
+                    alerts from one operational centre.
+                </p>
+
+            </div>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            ENERGY
+                        </span>
+
+                        <h2>
+                            Consumption Alerts
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div id="consumptionAlerts">
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Consumption Alerts
+                        </h3>
+
+                        <p>
+                            Facility energy alerts will appear here.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            EQUIPMENT
+                        </span>
+
+                        <h2>
+                            Maintenance Alerts
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div id="maintenanceAlerts">
+
+                    <div class="placeholder-panel">
+
+                        <h3>
+                            Loading Maintenance Alerts
+                        </h3>
+
+                        <p>
+                            Equipment maintenance alerts will appear here.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             FOOTER
+             ===================================================== -->
+
+        <footer>
+            FacilityOps AI · Smart Facility Operations &amp; Optimization
+        </footer>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     DASHBOARD JAVASCRIPT
+     ========================================================= -->
+
+<script src="/static/js/dashboard.js"></script>
+
+
+<!-- =========================================================
+     UNIFIED SIDEBAR NAVIGATION
+     ========================================================= -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const navItems =
+            document.querySelectorAll(
+                "[data-section-target]"
+            );
+
+        const sections =
+            document.querySelectorAll(
+                ".dashboard-section"
+            );
+
+
+        function resizeVisibleCharts() {
+
+            if (
+                typeof Plotly === "undefined"
+            ) {
+                return;
+            }
+
+
+            const chartIds = [
+
+                "energyChart",
+
+                "hvacChart",
+
+                "occupancyChart",
+
+                "buildingChart",
+
+                "maintenanceHealthChart",
+
+                "maintenanceBuildingChart"
+
+            ];
+
+
+            chartIds.forEach(
+                function (chartId) {
+
+                    const chart =
+                        document.getElementById(
+                            chartId
+                        );
+
+
+                    if (
+                        chart &&
+                        chart.data
+                    ) {
+
+                        try {
+
+                            Plotly.Plots.resize(
+                                chart
+                            );
+
+                        } catch (error) {
+
+                            console.debug(
+                                "Chart resize skipped:",
+                                chartId
+                            );
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        function showSection(
+            sectionId,
+            clickedItem
+        ) {
+
+            sections.forEach(
+                function (section) {
+
+                    section.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+
+            navItems.forEach(
+                function (item) {
+
+                    item.classList.remove(
+                        "active"
+                    );
+
+                }
+            );
+
+
+            const target =
+                document.getElementById(
+                    sectionId
+                );
+
+
+            if (target) {
+
+                target.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            if (clickedItem) {
+
+                clickedItem.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            localStorage.setItem(
+                "facilityopsSection",
+                sectionId
+            );
+
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+
+            setTimeout(
+                resizeVisibleCharts,
+                180
+            );
+
+        }
+
+
+        navItems.forEach(
+            function (item) {
+
+                item.addEventListener(
+                    "click",
+                    function (event) {
+
+                        event.preventDefault();
+
+
+                        showSection(
+
+                            this.getAttribute(
+                                "data-section-target"
+                            ),
+
+                            this
+
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        const saved =
+            localStorage.getItem(
+                "facilityopsSection"
+            );
+
+
+        if (saved) {
+
+            const savedItem =
+                document.querySelector(
+                    `[data-section-target="${saved}"]`
+                );
+
+
+            if (savedItem) {
+
+                showSection(
+                    saved,
+                    savedItem
+                );
+
+            }
+
+        }
+
+
+        window.addEventListener(
+            "resize",
+            function () {
+
+                clearTimeout(
+                    window.facilityOpsResizeTimer
+                );
+
+
+                window.facilityOpsResizeTimer =
+                    setTimeout(
+                        resizeVisibleCharts,
+                        140
+                    );
+
+            }
+        );
+
+    }
+);
+
+</script>
+
+</body>
+</html>

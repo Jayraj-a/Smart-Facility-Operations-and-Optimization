@@ -1,0 +1,61 @@
+{
+    "model": "RandomForestClassifier",
+    "dataset": "Simulated Milestone 2 asset monitoring dataset",
+    "records": 5760,
+    "training_records": 4320,
+    "testing_records": 1440,
+    "normal_records": 5624,
+    "maintenance_required_records": 136,
+    "accuracy": 0.990278,
+    "precision": 0.727273,
+    "recall": 0.941176,
+    "f1_score": 0.820513,
+    "confusion_matrix": [
+        [
+            1394,
+            12
+        ],
+        [
+            2,
+            32
+        ]
+    ],
+    "feature_importance": {
+        "temperature_c": 0.528997,
+        "vibration_mm_s": 0.32288,
+        "pressure_bar": 0.059971,
+        "power_kw": 0.02981,
+        "runtime_hours": 0.011152,
+        "operating_hours": 0.01712,
+        "age_years": 0.016567,
+        "days_since_service": 0.013503
+    },
+    "classification_report": {
+        "Normal": {
+            "precision": 0.998567335243553,
+            "recall": 0.9914651493598862,
+            "f1-score": 0.9950035688793719,
+            "support": 1406.0
+        },
+        "Maintenance Required": {
+            "precision": 0.7272727272727273,
+            "recall": 0.9411764705882353,
+            "f1-score": 0.8205128205128205,
+            "support": 34.0
+        },
+        "accuracy": 0.9902777777777778,
+        "macro avg": {
+            "precision": 0.8629200312581402,
+            "recall": 0.9663208099740608,
+            "f1-score": 0.9077581946960962,
+            "support": 1440.0
+        },
+        "weighted avg": {
+            "precision": 0.9921617681109085,
+            "recall": 0.9902777777777778,
+            "f1-score": 0.9908836484318283,
+            "support": 1440.0
+        }
+    },
+    "evaluation_note": "Metrics are measured on a held-out portion of the simulated Milestone 2 dataset."
+}
