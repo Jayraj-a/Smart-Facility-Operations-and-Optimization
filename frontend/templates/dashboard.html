@@ -3,7 +3,6 @@
 
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -18,7 +17,6 @@
 
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
-
 
 <body>
 
@@ -109,6 +107,46 @@
             <a
                 href="#"
                 class="nav-item"
+                data-section-target="occupancySection"
+            >
+                <span>♟</span>
+                Occupancy Intelligence
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="spaceUtilizationSection"
+            >
+                <span>▦</span>
+                Space Utilization
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="securitySection"
+            >
+                <span>◆</span>
+                Security Intelligence
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
+                data-section-target="accessMonitoringSection"
+            >
+                <span>⌁</span>
+                Access Monitoring
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
                 data-section-target="issueCentreSection"
             >
                 <span>⚠</span>
@@ -186,19 +224,16 @@
 
                 <p>
                     Monitor energy consumption, equipment health,
-                    maintenance requirements and operational issues
-                    from one integrated facility dashboard.
+                    occupancy, access activity and facility operations
+                    from one integrated intelligence dashboard.
                 </p>
 
             </div>
 
 
             <div class="top-status">
-
                 <span class="pulse-dot"></span>
-
                 System Online
-
             </div>
 
         </header>
@@ -217,11 +252,9 @@
                 </label>
 
                 <select id="facilitySelect">
-
                     <option value="">
                         Loading...
                     </option>
-
                 </select>
 
             </div>
@@ -234,11 +267,9 @@
                 </label>
 
                 <select id="buildingSelect">
-
                     <option value="">
                         All Buildings
                     </option>
-
                 </select>
 
             </div>
@@ -251,11 +282,9 @@
                 </label>
 
                 <select id="blockSelect">
-
                     <option value="">
                         All Blocks
                     </option>
-
                 </select>
 
             </div>
@@ -296,8 +325,8 @@
                 </h2>
 
                 <p>
-                    Monitor facility electricity, HVAC, lighting,
-                    water and occupancy performance.
+                    Unified operational view of simulated facility
+                    energy, equipment, occupancy and security data.
                 </p>
 
             </div>
@@ -354,20 +383,20 @@
                 <div class="metric-card">
 
                     <div class="metric-icon">
-                        ◉
+                        ♥
                     </div>
 
                     <div>
                         <span>
-                            Avg Lighting
+                            Equipment Health
                         </span>
 
-                        <h3 id="lightingMetric">
+                        <h3 id="maintenanceHealthMetric">
                             --
                         </h3>
 
                         <small>
-                            kWh
+                            score / 100
                         </small>
                     </div>
 
@@ -382,10 +411,10 @@
 
                     <div>
                         <span>
-                            Avg Occupancy
+                            Current Occupancy
                         </span>
 
-                        <h3 id="occupancyMetric">
+                        <h3 id="currentOccupancyOverviewMetric">
                             --
                         </h3>
 
@@ -400,20 +429,20 @@
                 <div class="metric-card">
 
                     <div class="metric-icon">
-                        ◇
+                        ◆
                     </div>
 
                     <div>
                         <span>
-                            Avg Water
+                            Unauthorized Attempts
                         </span>
 
-                        <h3 id="waterMetric">
+                        <h3 id="unauthorizedOverviewMetric">
                             --
                         </h3>
 
                         <small>
-                            litres
+                            detected
                         </small>
                     </div>
 
@@ -436,7 +465,7 @@
                         </h3>
 
                         <small>
-                            detected
+                            unusual readings
                         </small>
                     </div>
 
@@ -468,7 +497,6 @@
 
                     </div>
 
-
                     <div
                         id="energyChart"
                         class="chart"
@@ -492,7 +520,6 @@
                         </div>
 
                     </div>
-
 
                     <div
                         id="hvacChart"
@@ -526,11 +553,107 @@
                 </h2>
 
                 <p>
-                    Analyse energy consumption patterns,
-                    occupancy relationships and building performance.
+                    Analyse consumption patterns, occupancy relationships
+                    and building energy performance.
                 </p>
 
             </div>
+
+
+            <section class="metric-grid">
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ⚡
+                    </div>
+
+                    <div>
+                        <span>
+                            Electricity
+                        </span>
+
+                        <h3 id="energyElectricityMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            total kWh
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◉
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg Lighting
+                        </span>
+
+                        <h3 id="lightingMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            kWh
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◇
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg Water
+                        </span>
+
+                        <h3 id="waterMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            litres
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ♟
+                    </div>
+
+                    <div>
+                        <span>
+                            Avg Occupancy
+                        </span>
+
+                        <h3 id="occupancyMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            people
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
 
 
             <section class="chart-grid">
@@ -550,7 +673,6 @@
                         </div>
 
                     </div>
-
 
                     <div
                         id="occupancyChart"
@@ -575,7 +697,6 @@
                         </div>
 
                     </div>
-
 
                     <div
                         id="buildingChart"
@@ -609,8 +730,8 @@
                 </h2>
 
                 <p>
-                    Monitor equipment sensor conditions,
-                    operating information and asset lifecycle data.
+                    Monitor equipment sensor conditions, operating
+                    information and asset lifecycle data.
                     Current equipment readings are simulated.
                 </p>
 
@@ -636,29 +757,6 @@
 
                         <small>
                             equipment assets
-                        </small>
-                    </div>
-
-                </div>
-
-
-                <div class="metric-card">
-
-                    <div class="metric-icon">
-                        ♥
-                    </div>
-
-                    <div>
-                        <span>
-                            Average Health
-                        </span>
-
-                        <h3 id="maintenanceHealthMetric">
-                            --
-                        </h3>
-
-                        <small>
-                            score / 100
                         </small>
                     </div>
 
@@ -787,15 +885,8 @@
                 >
 
                     <div class="placeholder-panel">
-
-                        <h3>
-                            Loading Assets
-                        </h3>
-
-                        <p>
-                            Retrieving equipment monitoring data...
-                        </p>
-
+                        <h3>Loading Assets</h3>
+                        <p>Retrieving equipment monitoring data...</p>
                     </div>
 
                 </div>
@@ -825,8 +916,8 @@
                 </h2>
 
                 <p>
-                    Review equipment health scores,
-                    condition status and predicted maintenance risk.
+                    Review equipment health scores, condition status
+                    and predicted maintenance risk.
                 </p>
 
             </div>
@@ -849,7 +940,6 @@
                         </div>
 
                     </div>
-
 
                     <div
                         id="maintenanceHealthChart"
@@ -874,7 +964,6 @@
                         </div>
 
                     </div>
-
 
                     <div
                         id="maintenanceBuildingChart"
@@ -909,15 +998,8 @@
                 >
 
                     <div class="placeholder-panel">
-
-                        <h3>
-                            Loading Equipment Health
-                        </h3>
-
-                        <p>
-                            Calculating equipment health scores...
-                        </p>
-
+                        <h3>Loading Equipment Health</h3>
+                        <p>Calculating equipment health scores...</p>
                     </div>
 
                 </div>
@@ -977,15 +1059,8 @@
                 >
 
                     <div class="placeholder-panel">
-
-                        <h3>
-                            Loading Maintenance Schedule
-                        </h3>
-
-                        <p>
-                            Retrieving predicted maintenance dates...
-                        </p>
-
+                        <h3>Loading Maintenance Schedule</h3>
+                        <p>Retrieving predicted maintenance dates...</p>
                     </div>
 
                 </div>
@@ -1013,15 +1088,811 @@
                 <div id="maintenanceWorkOrders">
 
                     <div class="placeholder-panel">
+                        <h3>Loading Work Orders</h3>
+                        <p>Retrieving maintenance work orders...</p>
+                    </div>
 
-                        <h3>
-                            Loading Work Orders
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             OCCUPANCY INTELLIGENCE
+             ===================================================== -->
+
+        <section
+            id="occupancySection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    OCCUPANCY INTELLIGENCE
+                </span>
+
+                <h2>
+                    Occupancy Intelligence
+                </h2>
+
+                <p>
+                    Monitor room and building occupancy, identify
+                    overcrowding and understand facility usage patterns.
+                    Occupancy readings are simulated.
+                </p>
+
+            </div>
+
+
+            <section class="metric-grid">
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ♟
+                    </div>
+
+                    <div>
+                        <span>
+                            Spaces Monitored
+                        </span>
+
+                        <h3 id="occupancySpacesMetric">
+                            --
                         </h3>
 
-                        <p>
-                            Retrieving maintenance work orders...
-                        </p>
+                        <small>
+                            spaces
+                        </small>
+                    </div>
 
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◎
+                    </div>
+
+                    <div>
+                        <span>
+                            Current Occupancy
+                        </span>
+
+                        <h3 id="occupancyCurrentMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            people
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ▦
+                    </div>
+
+                    <div>
+                        <span>
+                            Total Capacity
+                        </span>
+
+                        <h3 id="occupancyCapacityMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            people
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        %
+                    </div>
+
+                    <div>
+                        <span>
+                            Current Utilization
+                        </span>
+
+                        <h3 id="occupancyUtilizationMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            facility utilization
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ↓
+                    </div>
+
+                    <div>
+                        <span>
+                            Underused Spaces
+                        </span>
+
+                        <h3 id="occupancyUnderusedMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            spaces
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card alert-card">
+
+                    <div class="metric-icon">
+                        !
+                    </div>
+
+                    <div>
+                        <span>
+                            Overcrowded
+                        </span>
+
+                        <h3 id="occupancyOvercrowdedMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            current spaces
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                DAILY USAGE PATTERN
+                            </span>
+
+                            <h2>
+                                Hourly Occupancy
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="occupancyHourlyChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                BUILDING UTILIZATION
+                            </span>
+
+                            <h2>
+                                Building Occupancy
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="occupancyBuildingChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            CURRENT SPACE STATUS
+                        </span>
+
+                        <h2>
+                            Space Occupancy
+                        </h2>
+                    </div>
+
+                    <span class="live-chip">
+                        SIMULATED DATA
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="occupancySpacesTable"
+                    class="table-wrapper"
+                >
+                    <div class="placeholder-panel">
+                        <h3>Loading Occupancy</h3>
+                        <p>Retrieving current space readings...</p>
+                    </div>
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             SPACE UTILIZATION
+             ===================================================== -->
+
+        <section
+            id="spaceUtilizationSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    SPACE OPTIMIZATION
+                </span>
+
+                <h2>
+                    Space Utilization
+                </h2>
+
+                <p>
+                    Analyse workspace utilization, peak usage hours,
+                    overcrowding conditions and underused spaces.
+                </p>
+
+            </div>
+
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                SPACE UTILIZATION
+                            </span>
+
+                            <h2>
+                                Utilization by Space
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="spaceUtilizationChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                PEAK FACILITY USAGE
+                            </span>
+
+                            <h2>
+                                Peak Usage Hours
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="peakHoursChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            OCCUPANCY HEATMAP
+                        </span>
+
+                        <h2>
+                            Facility Usage Heatmap
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div
+                    id="occupancyHeatmapChart"
+                    class="chart"
+                ></div>
+
+            </section>
+
+
+            <section class="chart-grid panel-spacing">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <div>
+                            <span class="panel-label">
+                                SPACE OPTIMIZATION
+                            </span>
+
+                            <h2>
+                                Underused Spaces
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div id="underusedSpaces">
+                        <div class="placeholder-panel">
+                            <h3>Loading Space Analysis</h3>
+                            <p>Analysing underused spaces...</p>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <div>
+                            <span class="panel-label">
+                                CAPACITY MONITORING
+                            </span>
+
+                            <h2>
+                                Overcrowding Events
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div id="overcrowdingEvents">
+                        <div class="placeholder-panel">
+                            <h3>Loading Events</h3>
+                            <p>Checking overcrowding conditions...</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+                    <div>
+                        <span class="panel-label">
+                            OCCUPANCY AGENT
+                        </span>
+
+                        <h2>
+                            Occupancy Insights
+                        </h2>
+                    </div>
+                </div>
+
+                <div id="occupancyInsights">
+                    <div class="placeholder-panel">
+                        <h3>Generating Insights</h3>
+                        <p>Analysing facility usage patterns...</p>
+                    </div>
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             SECURITY INTELLIGENCE
+             ===================================================== -->
+
+        <section
+            id="securitySection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    SECURITY INTELLIGENCE
+                </span>
+
+                <h2>
+                    Security Intelligence
+                </h2>
+
+                <p>
+                    Monitor access control activity, unauthorized
+                    attempts, after-hours events, CCTV activity and
+                    visitor movement. Security events are simulated.
+                </p>
+
+            </div>
+
+
+            <section class="metric-grid">
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◆
+                    </div>
+
+                    <div>
+                        <span>
+                            Total Events
+                        </span>
+
+                        <h3 id="securityEventsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            access events
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ✓
+                    </div>
+
+                    <div>
+                        <span>
+                            Granted Access
+                        </span>
+
+                        <h3 id="securityGrantedMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            events
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ×
+                    </div>
+
+                    <div>
+                        <span>
+                            Denied Access
+                        </span>
+
+                        <h3 id="securityDeniedMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            events
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card alert-card">
+
+                    <div class="metric-icon">
+                        !
+                    </div>
+
+                    <div>
+                        <span>
+                            Unauthorized
+                        </span>
+
+                        <h3 id="securityUnauthorizedMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            attempts
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◷
+                    </div>
+
+                    <div>
+                        <span>
+                            After Hours
+                        </span>
+
+                        <h3 id="securityAfterHoursMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            events
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card alert-card">
+
+                    <div class="metric-icon">
+                        ⚠
+                    </div>
+
+                    <div>
+                        <span>
+                            Security Alerts
+                        </span>
+
+                        <h3 id="securityAlertsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            flagged events
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                ACCESS POINT ANALYSIS
+                            </span>
+
+                            <h2>
+                                Access Point Activity
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="securityAccessPointChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                SECURITY PATTERN
+                            </span>
+
+                            <h2>
+                                Hourly Security Events
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="securityHourlyChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            SECURITY AGENT
+                        </span>
+
+                        <h2>
+                            Security Insights
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div id="securityInsights">
+                    <div class="placeholder-panel">
+                        <h3>Generating Security Insights</h3>
+                        <p>Analysing security activity...</p>
+                    </div>
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- =====================================================
+             ACCESS MONITORING
+             ===================================================== -->
+
+        <section
+            id="accessMonitoringSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    ACCESS CONTROL
+                </span>
+
+                <h2>
+                    Access Monitoring
+                </h2>
+
+                <p>
+                    Review recent access activity, unauthorized access
+                    attempts, after-hours activity and visitor movement.
+                </p>
+
+            </div>
+
+
+            <section class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            RECENT ACCESS EVENTS
+                        </span>
+
+                        <h2>
+                            Access Activity
+                        </h2>
+                    </div>
+
+                    <span class="live-chip">
+                        SIMULATED DATA
+                    </span>
+
+                </div>
+
+                <div
+                    id="securityEventsTable"
+                    class="table-wrapper"
+                >
+                    <div class="placeholder-panel">
+                        <h3>Loading Security Events</h3>
+                        <p>Retrieving access activity...</p>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <section class="chart-grid panel-spacing">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <div>
+                            <span class="panel-label">
+                                UNAUTHORIZED ACCESS
+                            </span>
+
+                            <h2>
+                                Recent Unauthorized Attempts
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div id="unauthorizedEvents">
+                        <div class="placeholder-panel">
+                            <h3>Loading Attempts</h3>
+                            <p>Checking unauthorized access activity...</p>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+                        <div>
+                            <span class="panel-label">
+                                VISITOR TRACKING
+                            </span>
+
+                            <h2>
+                                Visitor Movement
+                            </h2>
+                        </div>
+                    </div>
+
+                    <div id="visitorMovement">
+                        <div class="placeholder-panel">
+                            <h3>Loading Visitors</h3>
+                            <p>Analysing visitor movement...</p>
+                        </div>
                     </div>
 
                 </div>
@@ -1051,8 +1922,8 @@
                 </h2>
 
                 <p>
-                    Review unusual facility usage and
-                    operational consumption issues.
+                    Review unusual facility usage, equipment risks,
+                    occupancy conditions and security incidents.
                 </p>
 
             </div>
@@ -1064,7 +1935,7 @@
 
                     <div>
                         <span class="panel-label">
-                            FLAGGED ISSUES
+                            ENERGY FLAGGED ISSUES
                         </span>
 
                         <h2>
@@ -1074,21 +1945,37 @@
 
                 </div>
 
-
                 <div id="anomalyTable">
-
                     <div class="placeholder-panel">
+                        <h3>Loading Issue Centre</h3>
+                        <p>Analysing facility consumption readings...</p>
+                    </div>
+                </div>
 
-                        <h3>
-                            Loading Issue Centre
-                        </h3>
+            </section>
 
-                        <p>
-                            Analysing facility consumption readings...
-                        </p>
 
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            SECURITY INCIDENTS
+                        </span>
+
+                        <h2>
+                            Security Issue Centre
+                        </h2>
                     </div>
 
+                </div>
+
+                <div id="securityIssueCentre">
+                    <div class="placeholder-panel">
+                        <h3>Loading Security Issues</h3>
+                        <p>Analysing access and security events...</p>
+                    </div>
                 </div>
 
             </section>
@@ -1116,7 +2003,7 @@
                 </h2>
 
                 <p>
-                    Review energy-consumption and equipment-maintenance
+                    Review energy, equipment, occupancy and security
                     alerts from one operational centre.
                 </p>
 
@@ -1139,21 +2026,11 @@
 
                 </div>
 
-
                 <div id="consumptionAlerts">
-
                     <div class="placeholder-panel">
-
-                        <h3>
-                            Loading Consumption Alerts
-                        </h3>
-
-                        <p>
-                            Facility energy alerts will appear here.
-                        </p>
-
+                        <h3>Loading Consumption Alerts</h3>
+                        <p>Facility energy alerts will appear here.</p>
                     </div>
-
                 </div>
 
             </section>
@@ -1175,21 +2052,63 @@
 
                 </div>
 
-
                 <div id="maintenanceAlerts">
-
                     <div class="placeholder-panel">
+                        <h3>Loading Maintenance Alerts</h3>
+                        <p>Equipment maintenance alerts will appear here.</p>
+                    </div>
+                </div>
 
-                        <h3>
-                            Loading Maintenance Alerts
-                        </h3>
+            </section>
 
-                        <p>
-                            Equipment maintenance alerts will appear here.
-                        </p>
 
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            OCCUPANCY
+                        </span>
+
+                        <h2>
+                            Occupancy Alerts
+                        </h2>
                     </div>
 
+                </div>
+
+                <div id="occupancyAlerts">
+                    <div class="placeholder-panel">
+                        <h3>Loading Occupancy Alerts</h3>
+                        <p>Occupancy alerts will appear here.</p>
+                    </div>
+                </div>
+
+            </section>
+
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            SECURITY
+                        </span>
+
+                        <h2>
+                            Security Alerts
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div id="securityAlerts">
+                    <div class="placeholder-panel">
+                        <h3>Loading Security Alerts</h3>
+                        <p>Security alerts will appear here.</p>
+                    </div>
                 </div>
 
             </section>
@@ -1197,12 +2116,9 @@
         </section>
 
 
-        <!-- =====================================================
-             FOOTER
-             ===================================================== -->
-
         <footer>
             FacilityOps AI · Smart Facility Operations &amp; Optimization
+            · Simulated Facility Data
         </footer>
 
     </main>
@@ -1210,16 +2126,8 @@
 </div>
 
 
-<!-- =========================================================
-     DASHBOARD JAVASCRIPT
-     ========================================================= -->
-
 <script src="/static/js/dashboard.js"></script>
 
-
-<!-- =========================================================
-     UNIFIED SIDEBAR NAVIGATION
-     ========================================================= -->
 
 <script>
 
@@ -1250,16 +2158,18 @@ document.addEventListener(
             const chartIds = [
 
                 "energyChart",
-
                 "hvacChart",
-
                 "occupancyChart",
-
                 "buildingChart",
-
                 "maintenanceHealthChart",
-
-                "maintenanceBuildingChart"
+                "maintenanceBuildingChart",
+                "occupancyHourlyChart",
+                "occupancyBuildingChart",
+                "spaceUtilizationChart",
+                "peakHoursChart",
+                "occupancyHeatmapChart",
+                "securityAccessPointChart",
+                "securityHourlyChart"
 
             ];
 
@@ -1271,7 +2181,6 @@ document.addEventListener(
                         document.getElementById(
                             chartId
                         );
-
 
                     if (
                         chart &&
@@ -1380,7 +2289,6 @@ document.addEventListener(
                     function (event) {
 
                         event.preventDefault();
-
 
                         showSection(
 

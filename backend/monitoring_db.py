@@ -7,29 +7,47 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATABASE_FILE = PROJECT_ROOT / "backend" / "facilityops.db"
 
 
-# ============================================================
-# DATABASE CONNECTION
-# ============================================================
-
 def get_connection():
     connection = sqlite3.connect(DATABASE_FILE)
     connection.row_factory = sqlite3.Row
     return connection
 
 
-# ============================================================
-# HELPER
-# ============================================================
-
 def safe_float(value):
     try:
         if value is None:
             return None
-
         return float(value)
-
     except (TypeError, ValueError):
         return None
+
+
+def safe_int(value, default=0):
+    try:
+        if value is None:
+            return default
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def bool_int(value):
+    if isinstance(value, str):
+        return 1 if value.strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+        } else 0
+
+    return 1 if bool(value) else 0
+
+
+def _rows_to_dicts(rows):
+    return [
+        dict(row)
+        for row in rows
+    ]
 
 
 # ============================================================
@@ -37,11 +55,9 @@ def safe_float(value):
 # ============================================================
 
 def initialise_monitoring_database():
-
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         # ====================================================
@@ -49,7 +65,8 @@ def initialise_monitoring_database():
         # ENERGY READINGS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS energy_readings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -79,14 +96,16 @@ def initialise_monitoring_database():
                     block_name
                 )
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 1
-        # ALERTS / ISSUES
+        # ENERGY ALERTS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS alerts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -125,14 +144,16 @@ def initialise_monitoring_database():
                     title
                 )
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 1
         # DAILY SUMMARIES
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS daily_summaries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -163,14 +184,16 @@ def initialise_monitoring_database():
                     block_name
                 )
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 2
         # ASSETS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS assets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -191,14 +214,16 @@ def initialise_monitoring_database():
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 2
-        # ASSET MONITORING READINGS
+        # ASSET READINGS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS asset_readings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -238,14 +263,16 @@ def initialise_monitoring_database():
                     timestamp
                 )
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 2
         # MAINTENANCE PREDICTIONS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS maintenance_predictions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -279,14 +306,16 @@ def initialise_monitoring_database():
                     source_timestamp
                 )
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 2
         # MAINTENANCE ALERTS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS maintenance_alerts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -323,14 +352,16 @@ def initialise_monitoring_database():
                     title
                 )
             )
-        """)
+            """
+        )
 
         # ====================================================
         # MILESTONE 2
         # MAINTENANCE WORK ORDERS
         # ====================================================
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS maintenance_work_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -359,12 +390,211 @@ def initialise_monitoring_database():
                     source_timestamp
                 )
             )
-        """)
+            """
+        )
+
+        # ====================================================
+        # MILESTONE 3
+        # OCCUPANCY RECORDS
+        # ====================================================
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS occupancy_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                facility_id TEXT,
+                facility_name TEXT,
+
+                building_id TEXT,
+                building_name TEXT,
+
+                block_id TEXT,
+                block_name TEXT,
+
+                space_id TEXT NOT NULL,
+                space_name TEXT,
+                space_type TEXT,
+
+                timestamp TEXT NOT NULL,
+
+                capacity INTEGER,
+                occupancy_count INTEGER,
+                available_capacity INTEGER,
+
+                utilization_percent REAL,
+                utilization_status TEXT,
+
+                overcrowded INTEGER DEFAULT 0,
+
+                created_at TEXT NOT NULL,
+
+                UNIQUE(
+                    space_id,
+                    timestamp
+                )
+            )
+            """
+        )
+
+        # ====================================================
+        # MILESTONE 3
+        # OCCUPANCY ALERTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS occupancy_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                source_timestamp TEXT,
+
+                facility_id TEXT,
+                facility_name TEXT,
+
+                building_id TEXT,
+                building_name TEXT,
+
+                block_id TEXT,
+                block_name TEXT,
+
+                space_id TEXT,
+                space_name TEXT,
+                space_type TEXT,
+
+                alert_type TEXT DEFAULT 'OVERCROWDING',
+                severity TEXT,
+
+                occupancy_count INTEGER,
+                capacity INTEGER,
+                utilization_percent REAL,
+
+                title TEXT NOT NULL,
+                message TEXT,
+                recommended_action TEXT,
+
+                status TEXT DEFAULT 'OPEN',
+
+                created_at TEXT NOT NULL,
+
+                UNIQUE(
+                    space_id,
+                    source_timestamp,
+                    alert_type,
+                    title
+                )
+            )
+            """
+        )
+
+        # ====================================================
+        # MILESTONE 3
+        # SECURITY EVENTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS security_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                event_id TEXT NOT NULL UNIQUE,
+
+                facility_id TEXT,
+                facility_name TEXT,
+
+                building_id TEXT,
+                building_name TEXT,
+
+                block_id TEXT,
+                block_name TEXT,
+
+                access_point_id TEXT,
+                access_point_name TEXT,
+                zone_type TEXT,
+
+                timestamp TEXT NOT NULL,
+
+                user_id TEXT,
+                user_name TEXT,
+                user_type TEXT,
+
+                event_type TEXT,
+                access_status TEXT,
+
+                after_hours INTEGER DEFAULT 0,
+                unauthorized_attempt INTEGER DEFAULT 0,
+                forced_entry INTEGER DEFAULT 0,
+                tailgating_detected INTEGER DEFAULT 0,
+
+                cctv_event TEXT,
+
+                severity TEXT,
+
+                security_alert INTEGER DEFAULT 0,
+
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+        # ====================================================
+        # MILESTONE 3
+        # SECURITY ALERTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS security_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                event_id TEXT NOT NULL,
+                source_timestamp TEXT,
+
+                facility_id TEXT,
+                facility_name TEXT,
+
+                building_id TEXT,
+                building_name TEXT,
+
+                block_id TEXT,
+                block_name TEXT,
+
+                access_point_id TEXT,
+                access_point_name TEXT,
+                zone_type TEXT,
+
+                user_id TEXT,
+                user_name TEXT,
+                user_type TEXT,
+
+                event_type TEXT,
+                access_status TEXT,
+
+                alert_type TEXT DEFAULT 'SECURITY_INCIDENT',
+
+                severity TEXT,
+                risk_score REAL,
+
+                title TEXT NOT NULL,
+                message TEXT,
+                recommended_action TEXT,
+
+                status TEXT DEFAULT 'OPEN',
+
+                created_at TEXT NOT NULL,
+
+                UNIQUE(
+                    event_id,
+                    alert_type,
+                    title
+                )
+            )
+            """
+        )
 
         connection.commit()
 
     finally:
-
         connection.close()
 
 
@@ -374,17 +604,14 @@ def initialise_monitoring_database():
 # ============================================================
 
 def save_energy_reading(reading):
-
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
             """
             INSERT OR IGNORE INTO energy_readings (
-
                 facility_id,
                 facility_name,
 
@@ -404,9 +631,11 @@ def save_energy_reading(reading):
                 occupancy,
 
                 created_at
-
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?
+            )
             """,
             (
                 str(reading.get("facility_id", "")),
@@ -420,12 +649,53 @@ def save_energy_reading(reading):
 
                 str(reading.get("timestamp", "")),
 
-                float(reading.get("electricity_kwh", 0) or 0),
-                float(reading.get("water_liters", 0) or 0),
-                float(reading.get("hvac_kwh", 0) or 0),
-                float(reading.get("lighting_kwh", 0) or 0),
-                float(reading.get("temperature_c", 0) or 0),
-                float(reading.get("occupancy", 0) or 0),
+                float(
+                    reading.get(
+                        "electricity_kwh",
+                        0,
+                    )
+                    or 0
+                ),
+
+                float(
+                    reading.get(
+                        "water_liters",
+                        0,
+                    )
+                    or 0
+                ),
+
+                float(
+                    reading.get(
+                        "hvac_kwh",
+                        0,
+                    )
+                    or 0
+                ),
+
+                float(
+                    reading.get(
+                        "lighting_kwh",
+                        0,
+                    )
+                    or 0
+                ),
+
+                float(
+                    reading.get(
+                        "temperature_c",
+                        0,
+                    )
+                    or 0
+                ),
+
+                float(
+                    reading.get(
+                        "occupancy",
+                        0,
+                    )
+                    or 0
+                ),
 
                 datetime.now().isoformat(),
             ),
@@ -436,7 +706,6 @@ def save_energy_reading(reading):
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
@@ -446,21 +715,19 @@ def save_energy_reading(reading):
 # ============================================================
 
 def save_energy_readings_batch(readings):
-
     inserted = 0
 
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
-        for reading in readings:
+        now = datetime.now().isoformat()
 
+        for reading in readings:
             cursor.execute(
                 """
                 INSERT OR IGNORE INTO energy_readings (
-
                     facility_id,
                     facility_name,
 
@@ -480,30 +747,111 @@ def save_energy_readings_batch(readings):
                     occupancy,
 
                     created_at
-
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (
+                    ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?
+                )
                 """,
                 (
-                    str(reading.get("facility_id", "")),
-                    str(reading.get("facility_name", "")),
+                    str(
+                        reading.get(
+                            "facility_id",
+                            "",
+                        )
+                    ),
 
-                    str(reading.get("building_id", "")),
-                    str(reading.get("building_name", "")),
+                    str(
+                        reading.get(
+                            "facility_name",
+                            "",
+                        )
+                    ),
 
-                    str(reading.get("block_id", "")),
-                    str(reading.get("block_name", "")),
+                    str(
+                        reading.get(
+                            "building_id",
+                            "",
+                        )
+                    ),
 
-                    str(reading.get("timestamp", "")),
+                    str(
+                        reading.get(
+                            "building_name",
+                            "",
+                        )
+                    ),
 
-                    float(reading.get("electricity_kwh", 0) or 0),
-                    float(reading.get("water_liters", 0) or 0),
-                    float(reading.get("hvac_kwh", 0) or 0),
-                    float(reading.get("lighting_kwh", 0) or 0),
-                    float(reading.get("temperature_c", 0) or 0),
-                    float(reading.get("occupancy", 0) or 0),
+                    str(
+                        reading.get(
+                            "block_id",
+                            "",
+                        )
+                    ),
 
-                    datetime.now().isoformat(),
+                    str(
+                        reading.get(
+                            "block_name",
+                            "",
+                        )
+                    ),
+
+                    str(
+                        reading.get(
+                            "timestamp",
+                            "",
+                        )
+                    ),
+
+                    float(
+                        reading.get(
+                            "electricity_kwh",
+                            0,
+                        )
+                        or 0
+                    ),
+
+                    float(
+                        reading.get(
+                            "water_liters",
+                            0,
+                        )
+                        or 0
+                    ),
+
+                    float(
+                        reading.get(
+                            "hvac_kwh",
+                            0,
+                        )
+                        or 0
+                    ),
+
+                    float(
+                        reading.get(
+                            "lighting_kwh",
+                            0,
+                        )
+                        or 0
+                    ),
+
+                    float(
+                        reading.get(
+                            "temperature_c",
+                            0,
+                        )
+                        or 0
+                    ),
+
+                    float(
+                        reading.get(
+                            "occupancy",
+                            0,
+                        )
+                        or 0
+                    ),
+
+                    now,
                 ),
             )
 
@@ -515,7 +863,6 @@ def save_energy_readings_batch(readings):
         return inserted
 
     finally:
-
         connection.close()
 
 
@@ -527,13 +874,11 @@ def save_energy_readings_batch(readings):
 def get_historical_readings(
     building=None,
     block=None,
-    limit=500
+    limit=500,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM energy_readings
@@ -543,52 +888,59 @@ def get_historical_readings(
         params = []
 
         if building:
-            query += " AND building_name = ?"
-            params.append(building)
+            query += """
+                AND building_name = ?
+            """
+
+            params.append(
+                building
+            )
 
         if block:
-            query += " AND block_name = ?"
-            params.append(block)
+            query += """
+                AND block_name = ?
+            """
+
+            params.append(
+                block
+            )
 
         query += """
             ORDER BY timestamp DESC
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
 # ============================================================
 # MILESTONE 1
-# CREATE ALERT
+# CREATE ENERGY ALERT
 # ============================================================
 
 def create_alert(alert):
-
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
             """
             INSERT OR IGNORE INTO alerts (
-
                 created_at,
                 source_timestamp,
 
@@ -614,71 +966,126 @@ def create_alert(alert):
                 message,
 
                 status
-
             )
             VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?
             )
             """,
             (
                 alert.get(
                     "created_at",
-                    datetime.now().isoformat()
+                    datetime.now().isoformat(),
                 ),
 
                 str(
                     alert.get(
                         "source_timestamp",
-                        ""
+                        "",
                     )
                 ),
 
-                str(alert.get("facility_id", "")),
-                str(alert.get("facility_name", "")),
+                str(
+                    alert.get(
+                        "facility_id",
+                        "",
+                    )
+                ),
 
-                str(alert.get("building_id", "")),
-                str(alert.get("building_name", "")),
+                str(
+                    alert.get(
+                        "facility_name",
+                        "",
+                    )
+                ),
 
-                str(alert.get("block_id", "")),
-                str(alert.get("block_name", "")),
+                str(
+                    alert.get(
+                        "building_id",
+                        "",
+                    )
+                ),
 
-                str(alert.get("alert_type", "ENERGY")),
-                str(alert.get("metric", "energy")),
+                str(
+                    alert.get(
+                        "building_name",
+                        "",
+                    )
+                ),
 
-                safe_float(
-                    alert.get("observed_value")
+                str(
+                    alert.get(
+                        "block_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "block_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "alert_type",
+                        "ENERGY",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "metric",
+                        "energy",
+                    )
                 ),
 
                 safe_float(
-                    alert.get("expected_value")
+                    alert.get(
+                        "observed_value"
+                    )
                 ),
 
                 safe_float(
-                    alert.get("change_percent")
+                    alert.get(
+                        "expected_value"
+                    )
                 ),
 
-                str(alert.get("severity", "WARNING")),
+                safe_float(
+                    alert.get(
+                        "change_percent"
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "severity",
+                        "WARNING",
+                    )
+                ),
 
                 str(
                     alert.get(
                         "title",
-                        "Facility Energy Issue"
+                        "Facility Energy Issue",
                     )
                 ),
 
                 str(
                     alert.get(
                         "message",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     alert.get(
                         "status",
-                        "OPEN"
+                        "OPEN",
                     )
-                ),
+                ).upper(),
             ),
         )
 
@@ -690,7 +1097,6 @@ def create_alert(alert):
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
@@ -701,13 +1107,11 @@ def create_alert(alert):
 
 def get_alerts(
     limit=50,
-    status=None
+    status=None,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM alerts
@@ -717,28 +1121,33 @@ def get_alerts(
         params = []
 
         if status:
-            query += " AND status = ?"
-            params.append(status.upper())
+            query += """
+                AND status = ?
+            """
+
+            params.append(
+                str(status).upper()
+            )
 
         query += """
             ORDER BY created_at DESC
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
@@ -749,16 +1158,17 @@ def get_alerts(
 
 def update_alert_status(
     alert_id,
-    status
+    status,
 ):
-
     allowed = {
         "OPEN",
         "INVESTIGATING",
-        "RESOLVED"
+        "RESOLVED",
     }
 
-    status = str(status).upper()
+    status = str(
+        status
+    ).upper()
 
     if status not in allowed:
         raise ValueError(
@@ -768,7 +1178,6 @@ def update_alert_status(
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -779,7 +1188,7 @@ def update_alert_status(
             """,
             (
                 status,
-                int(alert_id)
+                int(alert_id),
             ),
         )
 
@@ -788,25 +1197,21 @@ def update_alert_status(
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
 # ============================================================
 # MILESTONE 1
-# DAILY SUMMARY
+# UPSERT DAILY SUMMARY
 # ============================================================
 
 def upsert_daily_summary(summary):
-
     connection = get_connection()
 
     try:
-
         connection.execute(
             """
             INSERT INTO daily_summaries (
-
                 summary_date,
 
                 facility_name,
@@ -827,10 +1232,10 @@ def upsert_daily_summary(summary):
                 issue_count,
 
                 updated_at
-
             )
             VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?
             )
 
             ON CONFLICT(
@@ -840,7 +1245,6 @@ def upsert_daily_summary(summary):
             )
 
             DO UPDATE SET
-
                 facility_name =
                     excluded.facility_name,
 
@@ -875,11 +1279,24 @@ def upsert_daily_summary(summary):
                     excluded.updated_at
             """,
             (
-                summary.get("summary_date"),
+                summary.get(
+                    "summary_date"
+                ),
 
-                summary.get("facility_name", ""),
-                summary.get("building_name", ""),
-                summary.get("block_name", ""),
+                summary.get(
+                    "facility_name",
+                    "",
+                ),
+
+                summary.get(
+                    "building_name",
+                    "",
+                ),
+
+                summary.get(
+                    "block_name",
+                    "",
+                ),
 
                 safe_float(
                     summary.get(
@@ -932,8 +1349,9 @@ def upsert_daily_summary(summary):
                 int(
                     summary.get(
                         "issue_count",
-                        0
+                        0,
                     )
+                    or 0
                 ),
 
                 datetime.now().isoformat(),
@@ -943,7 +1361,6 @@ def upsert_daily_summary(summary):
         connection.commit()
 
     finally:
-
         connection.close()
 
 
@@ -955,13 +1372,11 @@ def upsert_daily_summary(summary):
 def get_daily_summaries(
     building=None,
     block=None,
-    limit=100
+    limit=100,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM daily_summaries
@@ -971,32 +1386,42 @@ def get_daily_summaries(
         params = []
 
         if building:
-            query += " AND building_name = ?"
-            params.append(building)
+            query += """
+                AND building_name = ?
+            """
+
+            params.append(
+                building
+            )
 
         if block:
-            query += " AND block_name = ?"
-            params.append(block)
+            query += """
+                AND block_name = ?
+            """
+
+            params.append(
+                block
+            )
 
         query += """
             ORDER BY summary_date DESC
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
@@ -1006,11 +1431,9 @@ def get_daily_summaries(
 # ============================================================
 
 def upsert_asset(asset):
-
     connection = get_connection()
 
     try:
-
         now = datetime.now().isoformat()
 
         connection.execute(
@@ -1033,40 +1456,100 @@ def upsert_asset(asset):
                 created_at,
                 updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
 
             ON CONFLICT(asset_id)
 
             DO UPDATE SET
-                asset_name = excluded.asset_name,
-                asset_type = excluded.asset_type,
-                facility_id = excluded.facility_id,
-                facility_name = excluded.facility_name,
-                building_name = excluded.building_name,
-                block_name = excluded.block_name,
-                age_years = excluded.age_years,
-                status = excluded.status,
-                updated_at = excluded.updated_at
+                asset_name =
+                    excluded.asset_name,
+
+                asset_type =
+                    excluded.asset_type,
+
+                facility_id =
+                    excluded.facility_id,
+
+                facility_name =
+                    excluded.facility_name,
+
+                building_name =
+                    excluded.building_name,
+
+                block_name =
+                    excluded.block_name,
+
+                age_years =
+                    excluded.age_years,
+
+                status =
+                    excluded.status,
+
+                updated_at =
+                    excluded.updated_at
             """,
             (
-                str(asset.get("asset_id", "")),
-                str(asset.get("asset_name", "")),
-                str(asset.get("asset_type", "")),
+                str(
+                    asset.get(
+                        "asset_id",
+                        "",
+                    )
+                ),
 
-                str(asset.get("facility_id", "")),
-                str(asset.get("facility_name", "")),
+                str(
+                    asset.get(
+                        "asset_name",
+                        "",
+                    )
+                ),
 
-                str(asset.get("building_name", "")),
-                str(asset.get("block_name", "")),
+                str(
+                    asset.get(
+                        "asset_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    asset.get(
+                        "facility_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    asset.get(
+                        "facility_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    asset.get(
+                        "building_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    asset.get(
+                        "block_name",
+                        "",
+                    )
+                ),
 
                 safe_float(
-                    asset.get("age_years")
+                    asset.get(
+                        "age_years"
+                    )
                 ),
 
                 str(
                     asset.get(
                         "status",
-                        "ACTIVE"
+                        "ACTIVE",
                     )
                 ),
 
@@ -1078,7 +1561,6 @@ def upsert_asset(asset):
         connection.commit()
 
     finally:
-
         connection.close()
 
 
@@ -1089,13 +1571,11 @@ def upsert_asset(asset):
 
 def get_assets(
     building=None,
-    asset_type=None
+    asset_type=None,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM assets
@@ -1105,12 +1585,22 @@ def get_assets(
         params = []
 
         if building:
-            query += " AND building_name = ?"
-            params.append(building)
+            query += """
+                AND building_name = ?
+            """
+
+            params.append(
+                building
+            )
 
         if asset_type:
-            query += " AND asset_type = ?"
-            params.append(asset_type)
+            query += """
+                AND asset_type = ?
+            """
+
+            params.append(
+                asset_type
+            )
 
         query += """
             ORDER BY asset_id
@@ -1118,17 +1608,210 @@ def get_assets(
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
+
+
+# ============================================================
+# MILESTONE 2
+# ASSET READING HELPERS
+# ============================================================
+
+def _asset_reading_values(
+    reading,
+    created_at,
+):
+    return (
+        str(
+            reading.get(
+                "asset_id",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "asset_name",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "asset_type",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "facility_id",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "facility_name",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "building_name",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "block_name",
+                "",
+            )
+        ),
+
+        str(
+            reading.get(
+                "timestamp",
+                "",
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "temperature_c"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "vibration_mm_s"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "pressure_bar"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "power_kw"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "runtime_hours"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "operating_hours"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "age_years"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "days_since_service"
+            )
+        ),
+
+        safe_float(
+            reading.get(
+                "health_score"
+            )
+        ),
+
+        str(
+            reading.get(
+                "health_status",
+                "",
+            )
+        ),
+
+        int(
+            reading.get(
+                "abnormal_behavior",
+                0,
+            )
+            or 0
+        ),
+
+        int(
+            reading.get(
+                "maintenance_required",
+                0,
+            )
+            or 0
+        ),
+
+        int(
+            reading.get(
+                "days_to_maintenance",
+                0,
+            )
+            or 0
+        ),
+
+        created_at,
+    )
+
+
+_ASSET_READING_INSERT = """
+    INSERT OR IGNORE INTO asset_readings (
+        asset_id,
+        asset_name,
+        asset_type,
+
+        facility_id,
+        facility_name,
+
+        building_name,
+        block_name,
+
+        timestamp,
+
+        temperature_c,
+        vibration_mm_s,
+        pressure_bar,
+        power_kw,
+
+        runtime_hours,
+        operating_hours,
+        age_years,
+        days_since_service,
+
+        generated_health_score,
+        generated_health_status,
+
+        abnormal_behavior,
+        maintenance_required,
+        days_to_maintenance,
+
+        created_at
+    )
+    VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    )
+"""
 
 
 # ============================================================
@@ -1137,134 +1820,15 @@ def get_assets(
 # ============================================================
 
 def save_asset_reading(reading):
-
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
-            """
-            INSERT OR IGNORE INTO asset_readings (
-                asset_id,
-                asset_name,
-                asset_type,
-
-                facility_id,
-                facility_name,
-
-                building_name,
-                block_name,
-
-                timestamp,
-
-                temperature_c,
-                vibration_mm_s,
-                pressure_bar,
-                power_kw,
-
-                runtime_hours,
-                operating_hours,
-                age_years,
-                days_since_service,
-
-                generated_health_score,
-                generated_health_status,
-
-                abnormal_behavior,
-                maintenance_required,
-                days_to_maintenance,
-
-                created_at
-            )
-            VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            """,
-            (
-                str(reading.get("asset_id", "")),
-                str(reading.get("asset_name", "")),
-                str(reading.get("asset_type", "")),
-
-                str(reading.get("facility_id", "")),
-                str(reading.get("facility_name", "")),
-
-                str(reading.get("building_name", "")),
-                str(reading.get("block_name", "")),
-
-                str(reading.get("timestamp", "")),
-
-                safe_float(
-                    reading.get("temperature_c")
-                ),
-
-                safe_float(
-                    reading.get("vibration_mm_s")
-                ),
-
-                safe_float(
-                    reading.get("pressure_bar")
-                ),
-
-                safe_float(
-                    reading.get("power_kw")
-                ),
-
-                safe_float(
-                    reading.get("runtime_hours")
-                ),
-
-                safe_float(
-                    reading.get("operating_hours")
-                ),
-
-                safe_float(
-                    reading.get("age_years")
-                ),
-
-                safe_float(
-                    reading.get("days_since_service")
-                ),
-
-                safe_float(
-                    reading.get(
-                        "health_score"
-                    )
-                ),
-
-                str(
-                    reading.get(
-                        "health_status",
-                        ""
-                    )
-                ),
-
-                int(
-                    reading.get(
-                        "abnormal_behavior",
-                        0
-                    )
-                    or 0
-                ),
-
-                int(
-                    reading.get(
-                        "maintenance_required",
-                        0
-                    )
-                    or 0
-                ),
-
-                int(
-                    reading.get(
-                        "days_to_maintenance",
-                        0
-                    )
-                    or 0
-                ),
-
+            _ASSET_READING_INSERT,
+            _asset_reading_values(
+                reading,
                 datetime.now().isoformat(),
             ),
         )
@@ -1274,7 +1838,6 @@ def save_asset_reading(reading):
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
@@ -1284,140 +1847,20 @@ def save_asset_reading(reading):
 # ============================================================
 
 def save_asset_readings_batch(readings):
-
     inserted = 0
 
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         now = datetime.now().isoformat()
 
         for reading in readings:
-
             cursor.execute(
-                """
-                INSERT OR IGNORE INTO asset_readings (
-                    asset_id,
-                    asset_name,
-                    asset_type,
-
-                    facility_id,
-                    facility_name,
-
-                    building_name,
-                    block_name,
-
-                    timestamp,
-
-                    temperature_c,
-                    vibration_mm_s,
-                    pressure_bar,
-                    power_kw,
-
-                    runtime_hours,
-                    operating_hours,
-                    age_years,
-                    days_since_service,
-
-                    generated_health_score,
-                    generated_health_status,
-
-                    abnormal_behavior,
-                    maintenance_required,
-                    days_to_maintenance,
-
-                    created_at
-                )
-                VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-                )
-                """,
-                (
-                    str(reading.get("asset_id", "")),
-                    str(reading.get("asset_name", "")),
-                    str(reading.get("asset_type", "")),
-
-                    str(reading.get("facility_id", "")),
-                    str(reading.get("facility_name", "")),
-
-                    str(reading.get("building_name", "")),
-                    str(reading.get("block_name", "")),
-
-                    str(reading.get("timestamp", "")),
-
-                    safe_float(
-                        reading.get("temperature_c")
-                    ),
-
-                    safe_float(
-                        reading.get("vibration_mm_s")
-                    ),
-
-                    safe_float(
-                        reading.get("pressure_bar")
-                    ),
-
-                    safe_float(
-                        reading.get("power_kw")
-                    ),
-
-                    safe_float(
-                        reading.get("runtime_hours")
-                    ),
-
-                    safe_float(
-                        reading.get("operating_hours")
-                    ),
-
-                    safe_float(
-                        reading.get("age_years")
-                    ),
-
-                    safe_float(
-                        reading.get("days_since_service")
-                    ),
-
-                    safe_float(
-                        reading.get(
-                            "health_score"
-                        )
-                    ),
-
-                    str(
-                        reading.get(
-                            "health_status",
-                            ""
-                        )
-                    ),
-
-                    int(
-                        reading.get(
-                            "abnormal_behavior",
-                            0
-                        )
-                        or 0
-                    ),
-
-                    int(
-                        reading.get(
-                            "maintenance_required",
-                            0
-                        )
-                        or 0
-                    ),
-
-                    int(
-                        reading.get(
-                            "days_to_maintenance",
-                            0
-                        )
-                        or 0
-                    ),
-
+                _ASSET_READING_INSERT,
+                _asset_reading_values(
+                    reading,
                     now,
                 ),
             )
@@ -1430,7 +1873,6 @@ def save_asset_readings_batch(readings):
         return inserted
 
     finally:
-
         connection.close()
 
 
@@ -1442,13 +1884,11 @@ def save_asset_readings_batch(readings):
 def get_asset_readings(
     asset_id=None,
     building=None,
-    limit=500
+    limit=500,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM asset_readings
@@ -1458,32 +1898,42 @@ def get_asset_readings(
         params = []
 
         if asset_id:
-            query += " AND asset_id = ?"
-            params.append(asset_id)
+            query += """
+                AND asset_id = ?
+            """
+
+            params.append(
+                asset_id
+            )
 
         if building:
-            query += " AND building_name = ?"
-            params.append(building)
+            query += """
+                AND building_name = ?
+            """
+
+            params.append(
+                building
+            )
 
         query += """
             ORDER BY timestamp DESC
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
@@ -1492,12 +1942,12 @@ def get_asset_readings(
 # SAVE MAINTENANCE PREDICTION
 # ============================================================
 
-def save_maintenance_prediction(prediction):
-
+def save_maintenance_prediction(
+    prediction,
+):
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -1534,38 +1984,68 @@ def save_maintenance_prediction(prediction):
             )
             """,
             (
-                str(prediction.get("asset_id", "")),
-                str(prediction.get("asset_name", "")),
-                str(prediction.get("asset_type", "")),
+                str(
+                    prediction.get(
+                        "asset_id",
+                        "",
+                    )
+                ),
 
-                str(prediction.get("building_name", "")),
-                str(prediction.get("block_name", "")),
+                str(
+                    prediction.get(
+                        "asset_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    prediction.get(
+                        "asset_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    prediction.get(
+                        "building_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    prediction.get(
+                        "block_name",
+                        "",
+                    )
+                ),
 
                 str(
                     prediction.get(
                         "source_timestamp",
                         prediction.get(
                             "timestamp",
-                            ""
-                        )
+                            "",
+                        ),
                     )
                 ),
 
                 safe_float(
-                    prediction.get("health_score")
+                    prediction.get(
+                        "health_score"
+                    )
                 ),
 
                 str(
                     prediction.get(
                         "health_status",
-                        ""
+                        "",
                     )
                 ),
 
                 int(
                     prediction.get(
                         "maintenance_required",
-                        0
+                        0,
                     )
                     or 0
                 ),
@@ -1585,28 +2065,28 @@ def save_maintenance_prediction(prediction):
                 str(
                     prediction.get(
                         "risk_level",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     prediction.get(
                         "priority",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     prediction.get(
                         "recommended_maintenance_date",
-                        ""
+                        "",
                     )
                 ),
 
                 int(
                     prediction.get(
                         "days_until_service",
-                        0
+                        0,
                     )
                     or 0
                 ),
@@ -1620,7 +2100,6 @@ def save_maintenance_prediction(prediction):
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
@@ -1631,13 +2110,11 @@ def save_maintenance_prediction(prediction):
 
 def get_maintenance_predictions(
     asset_id=None,
-    limit=100
+    limit=100,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM maintenance_predictions
@@ -1647,28 +2124,33 @@ def get_maintenance_predictions(
         params = []
 
         if asset_id:
-            query += " AND asset_id = ?"
-            params.append(asset_id)
+            query += """
+                AND asset_id = ?
+            """
+
+            params.append(
+                asset_id
+            )
 
         query += """
             ORDER BY source_timestamp DESC
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
@@ -1678,11 +2160,9 @@ def get_maintenance_predictions(
 # ============================================================
 
 def create_maintenance_alert(alert):
-
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -1721,49 +2201,79 @@ def create_maintenance_alert(alert):
             )
             """,
             (
-                str(alert.get("asset_id", "")),
-                str(alert.get("asset_name", "")),
-                str(alert.get("asset_type", "")),
+                str(
+                    alert.get(
+                        "asset_id",
+                        "",
+                    )
+                ),
 
-                str(alert.get("building_name", "")),
-                str(alert.get("block_name", "")),
+                str(
+                    alert.get(
+                        "asset_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "asset_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "building_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "block_name",
+                        "",
+                    )
+                ),
 
                 str(
                     alert.get(
                         "source_timestamp",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     alert.get(
                         "severity",
-                        "MEDIUM"
+                        "MEDIUM",
                     )
                 ),
 
                 str(
                     alert.get(
                         "title",
-                        "Maintenance Alert"
+                        "Maintenance Alert",
                     )
                 ),
 
                 str(
                     alert.get(
                         "message",
-                        ""
+                        "",
                     )
                 ),
 
                 safe_float(
-                    alert.get("health_score")
+                    alert.get(
+                        "health_score"
+                    )
                 ),
 
                 str(
                     alert.get(
                         "health_status",
-                        ""
+                        "",
                     )
                 ),
 
@@ -1782,14 +2292,14 @@ def create_maintenance_alert(alert):
                 str(
                     alert.get(
                         "recommended_maintenance_date",
-                        ""
+                        "",
                     )
                 ),
 
                 int(
                     alert.get(
                         "days_until_service",
-                        0
+                        0,
                     )
                     or 0
                 ),
@@ -1797,9 +2307,9 @@ def create_maintenance_alert(alert):
                 str(
                     alert.get(
                         "status",
-                        "OPEN"
+                        "OPEN",
                     )
-                ),
+                ).upper(),
 
                 datetime.now().isoformat(),
             ),
@@ -1813,7 +2323,6 @@ def create_maintenance_alert(alert):
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
@@ -1824,13 +2333,11 @@ def create_maintenance_alert(alert):
 
 def get_maintenance_alerts(
     limit=50,
-    status=None
+    status=None,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM maintenance_alerts
@@ -1840,7 +2347,10 @@ def get_maintenance_alerts(
         params = []
 
         if status:
-            query += " AND status = ?"
+            query += """
+                AND status = ?
+            """
+
             params.append(
                 str(status).upper()
             )
@@ -1850,20 +2360,20 @@ def get_maintenance_alerts(
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
@@ -1874,16 +2384,17 @@ def get_maintenance_alerts(
 
 def update_maintenance_alert_status(
     alert_id,
-    status
+    status,
 ):
-
     allowed = {
         "OPEN",
         "INVESTIGATING",
-        "RESOLVED"
+        "RESOLVED",
     }
 
-    status = str(status).upper()
+    status = str(
+        status
+    ).upper()
 
     if status not in allowed:
         raise ValueError(
@@ -1893,7 +2404,6 @@ def update_maintenance_alert_status(
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -1904,7 +2414,7 @@ def update_maintenance_alert_status(
             """,
             (
                 status,
-                int(alert_id)
+                int(alert_id),
             ),
         )
 
@@ -1913,7 +2423,6 @@ def update_maintenance_alert_status(
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
@@ -1923,13 +2432,11 @@ def update_maintenance_alert_status(
 # ============================================================
 
 def save_maintenance_work_order(
-    work_order
+    work_order,
 ):
-
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         now = datetime.now().isoformat()
@@ -1965,70 +2472,70 @@ def save_maintenance_work_order(
                 str(
                     work_order.get(
                         "asset_id",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "asset_name",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "asset_type",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "building_name",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "block_name",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "priority",
-                        "LOW"
+                        "LOW",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "recommended_date",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "reason",
-                        ""
+                        "",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "status",
-                        "RECOMMENDED"
+                        "RECOMMENDED",
                     )
                 ),
 
                 str(
                     work_order.get(
                         "source_timestamp",
-                        ""
+                        "",
                     )
                 ),
 
@@ -2045,7 +2552,6 @@ def save_maintenance_work_order(
         return cursor.lastrowid
 
     finally:
-
         connection.close()
 
 
@@ -2056,13 +2562,11 @@ def save_maintenance_work_order(
 
 def get_maintenance_work_orders(
     limit=50,
-    status=None
+    status=None,
 ):
-
     connection = get_connection()
 
     try:
-
         query = """
             SELECT *
             FROM maintenance_work_orders
@@ -2072,52 +2576,58 @@ def get_maintenance_work_orders(
         params = []
 
         if status:
-            query += " AND status = ?"
+            query += """
+                AND status = ?
+            """
+
             params.append(
                 str(status).upper()
             )
 
         query += """
-            ORDER BY recommended_date ASC, created_at DESC
+            ORDER BY
+                recommended_date ASC,
+                created_at DESC
             LIMIT ?
         """
 
-        params.append(int(limit))
+        params.append(
+            int(limit)
+        )
 
         rows = connection.execute(
             query,
-            params
+            params,
         ).fetchall()
 
-        return [
-            dict(row)
-            for row in rows
-        ]
+        return _rows_to_dicts(
+            rows
+        )
 
     finally:
-
         connection.close()
 
 
 # ============================================================
 # MILESTONE 2
-# UPDATE WORK ORDER STATUS
+# UPDATE MAINTENANCE WORK ORDER
 # ============================================================
 
 def update_maintenance_work_order_status(
     work_order_id,
-    status
+    status,
 ):
-
     allowed = {
         "RECOMMENDED",
         "SCHEDULED",
         "IN_PROGRESS",
         "COMPLETED",
-        "CANCELLED"
+        "CANCELLED",
     }
 
-    status = str(status).upper()
+    status = str(
+        status
+    ).upper()
 
     if status not in allowed:
         raise ValueError(
@@ -2127,7 +2637,6 @@ def update_maintenance_work_order_status(
     connection = get_connection()
 
     try:
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -2150,7 +2659,6 @@ def update_maintenance_work_order_status(
         return cursor.rowcount > 0
 
     finally:
-
         connection.close()
 
 
@@ -2160,14 +2668,9 @@ def update_maintenance_work_order_status(
 # ============================================================
 
 def get_maintenance_database_counts():
-    """
-    Useful for startup checks and Milestone 2 verification.
-    """
-
     connection = get_connection()
 
     try:
-
         tables = [
             "assets",
             "asset_readings",
@@ -2179,7 +2682,6 @@ def get_maintenance_database_counts():
         counts = {}
 
         for table in tables:
-
             row = connection.execute(
                 f"""
                 SELECT COUNT(*) AS total
@@ -2194,5 +2696,1339 @@ def get_maintenance_database_counts():
         return counts
 
     finally:
+        connection.close()
 
+
+# ============================================================
+# MILESTONE 3
+# OCCUPANCY RECORD HELPERS
+# ============================================================
+
+def _occupancy_record_values(
+    record,
+    created_at,
+):
+    return (
+        str(
+            record.get(
+                "facility_id",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "facility_name",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "building_id",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "building_name",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "block_id",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "block_name",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "space_id",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "space_name",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "space_type",
+                "",
+            )
+        ),
+
+        str(
+            record.get(
+                "timestamp",
+                "",
+            )
+        ),
+
+        safe_int(
+            record.get(
+                "capacity"
+            )
+        ),
+
+        safe_int(
+            record.get(
+                "occupancy_count"
+            )
+        ),
+
+        safe_int(
+            record.get(
+                "available_capacity"
+            )
+        ),
+
+        safe_float(
+            record.get(
+                "utilization_percent"
+            )
+        ),
+
+        str(
+            record.get(
+                "utilization_status",
+                "",
+            )
+        ),
+
+        bool_int(
+            record.get(
+                "overcrowded",
+                0,
+            )
+        ),
+
+        created_at,
+    )
+
+
+_OCCUPANCY_INSERT = """
+    INSERT OR IGNORE INTO occupancy_records (
+        facility_id,
+        facility_name,
+
+        building_id,
+        building_name,
+
+        block_id,
+        block_name,
+
+        space_id,
+        space_name,
+        space_type,
+
+        timestamp,
+
+        capacity,
+        occupancy_count,
+        available_capacity,
+
+        utilization_percent,
+        utilization_status,
+
+        overcrowded,
+
+        created_at
+    )
+    VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?
+    )
+"""
+
+
+# ============================================================
+# MILESTONE 3
+# SAVE OCCUPANCY RECORD
+# ============================================================
+
+def save_occupancy_record(record):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            _OCCUPANCY_INSERT,
+            _occupancy_record_values(
+                record,
+                datetime.now().isoformat(),
+            ),
+        )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# BATCH SAVE OCCUPANCY RECORDS
+# ============================================================
+
+def save_occupancy_records_batch(records):
+    inserted = 0
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        now = datetime.now().isoformat()
+
+        for record in records:
+            cursor.execute(
+                _OCCUPANCY_INSERT,
+                _occupancy_record_values(
+                    record,
+                    now,
+                ),
+            )
+
+            if cursor.rowcount > 0:
+                inserted += 1
+
+        connection.commit()
+
+        return inserted
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# GET OCCUPANCY RECORDS
+# ============================================================
+
+def get_occupancy_records(
+    space_id=None,
+    building=None,
+    block=None,
+    limit=500,
+):
+    connection = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM occupancy_records
+            WHERE 1 = 1
+        """
+
+        params = []
+
+        if space_id:
+            query += """
+                AND space_id = ?
+            """
+
+            params.append(
+                space_id
+            )
+
+        if building:
+            query += """
+                AND building_name = ?
+            """
+
+            params.append(
+                building
+            )
+
+        if block:
+            query += """
+                AND block_name = ?
+            """
+
+            params.append(
+                block
+            )
+
+        query += """
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """
+
+        params.append(
+            int(limit)
+        )
+
+        rows = connection.execute(
+            query,
+            params,
+        ).fetchall()
+
+        return _rows_to_dicts(
+            rows
+        )
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# CREATE OCCUPANCY ALERT
+# ============================================================
+
+def create_occupancy_alert(alert):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        source_timestamp = str(
+            alert.get(
+                "source_timestamp",
+                alert.get(
+                    "timestamp",
+                    "",
+                ),
+            )
+        )
+
+        title = str(
+            alert.get(
+                "title",
+                "Occupancy Alert",
+            )
+        )
+
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO occupancy_alerts (
+                source_timestamp,
+
+                facility_id,
+                facility_name,
+
+                building_id,
+                building_name,
+
+                block_id,
+                block_name,
+
+                space_id,
+                space_name,
+                space_type,
+
+                alert_type,
+                severity,
+
+                occupancy_count,
+                capacity,
+                utilization_percent,
+
+                title,
+                message,
+                recommended_action,
+
+                status,
+
+                created_at
+            )
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+            """,
+            (
+                source_timestamp,
+
+                str(
+                    alert.get(
+                        "facility_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "facility_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "building_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "building_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "block_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "block_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "space_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "space_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "space_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "alert_type",
+                        "OVERCROWDING",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "severity",
+                        "WARNING",
+                    )
+                ),
+
+                safe_int(
+                    alert.get(
+                        "occupancy_count"
+                    )
+                ),
+
+                safe_int(
+                    alert.get(
+                        "capacity"
+                    )
+                ),
+
+                safe_float(
+                    alert.get(
+                        "utilization_percent"
+                    )
+                ),
+
+                title,
+
+                str(
+                    alert.get(
+                        "message",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "recommended_action",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "status",
+                        "OPEN",
+                    )
+                ).upper(),
+
+                datetime.now().isoformat(),
+            ),
+        )
+
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return None
+
+        return cursor.lastrowid
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# GET OCCUPANCY ALERTS
+# ============================================================
+
+def get_occupancy_alerts(
+    limit=50,
+    status=None,
+):
+    connection = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM occupancy_alerts
+            WHERE 1 = 1
+        """
+
+        params = []
+
+        if status:
+            query += """
+                AND status = ?
+            """
+
+            params.append(
+                str(status).upper()
+            )
+
+        query += """
+            ORDER BY created_at DESC
+            LIMIT ?
+        """
+
+        params.append(
+            int(limit)
+        )
+
+        rows = connection.execute(
+            query,
+            params,
+        ).fetchall()
+
+        return _rows_to_dicts(
+            rows
+        )
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# UPDATE OCCUPANCY ALERT STATUS
+# ============================================================
+
+def update_occupancy_alert_status(
+    alert_id,
+    status,
+):
+    allowed = {
+        "OPEN",
+        "INVESTIGATING",
+        "RESOLVED",
+    }
+
+    status = str(
+        status
+    ).upper()
+
+    if status not in allowed:
+        raise ValueError(
+            "Invalid occupancy alert status."
+        )
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            UPDATE occupancy_alerts
+            SET status = ?
+            WHERE id = ?
+            """,
+            (
+                status,
+                int(alert_id),
+            ),
+        )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# SECURITY EVENT HELPERS
+# ============================================================
+
+def _security_event_values(
+    event,
+    created_at,
+):
+    return (
+        str(
+            event.get(
+                "event_id",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "facility_id",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "facility_name",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "building_id",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "building_name",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "block_id",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "block_name",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "access_point_id",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "access_point_name",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "zone_type",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "timestamp",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "user_id",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "user_name",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "user_type",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "event_type",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "access_status",
+                "",
+            )
+        ),
+
+        bool_int(
+            event.get(
+                "after_hours",
+                0,
+            )
+        ),
+
+        bool_int(
+            event.get(
+                "unauthorized_attempt",
+                0,
+            )
+        ),
+
+        bool_int(
+            event.get(
+                "forced_entry",
+                0,
+            )
+        ),
+
+        bool_int(
+            event.get(
+                "tailgating_detected",
+                0,
+            )
+        ),
+
+        str(
+            event.get(
+                "cctv_event",
+                "",
+            )
+        ),
+
+        str(
+            event.get(
+                "severity",
+                "NORMAL",
+            )
+        ),
+
+        bool_int(
+            event.get(
+                "security_alert",
+                0,
+            )
+        ),
+
+        created_at,
+    )
+
+
+_SECURITY_EVENT_INSERT = """
+    INSERT OR IGNORE INTO security_events (
+        event_id,
+
+        facility_id,
+        facility_name,
+
+        building_id,
+        building_name,
+
+        block_id,
+        block_name,
+
+        access_point_id,
+        access_point_name,
+        zone_type,
+
+        timestamp,
+
+        user_id,
+        user_name,
+        user_type,
+
+        event_type,
+        access_status,
+
+        after_hours,
+        unauthorized_attempt,
+        forced_entry,
+        tailgating_detected,
+
+        cctv_event,
+
+        severity,
+
+        security_alert,
+
+        created_at
+    )
+    VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    )
+"""
+
+
+# ============================================================
+# MILESTONE 3
+# SAVE SECURITY EVENT
+# ============================================================
+
+def save_security_event(event):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            _SECURITY_EVENT_INSERT,
+            _security_event_values(
+                event,
+                datetime.now().isoformat(),
+            ),
+        )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# BATCH SAVE SECURITY EVENTS
+# ============================================================
+
+def save_security_events_batch(events):
+    inserted = 0
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        now = datetime.now().isoformat()
+
+        for event in events:
+            cursor.execute(
+                _SECURITY_EVENT_INSERT,
+                _security_event_values(
+                    event,
+                    now,
+                ),
+            )
+
+            if cursor.rowcount > 0:
+                inserted += 1
+
+        connection.commit()
+
+        return inserted
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# GET SECURITY EVENTS
+# ============================================================
+
+def get_security_events(
+    event_id=None,
+    building=None,
+    access_point_id=None,
+    severity=None,
+    limit=500,
+):
+    connection = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM security_events
+            WHERE 1 = 1
+        """
+
+        params = []
+
+        if event_id:
+            query += """
+                AND event_id = ?
+            """
+
+            params.append(
+                event_id
+            )
+
+        if building:
+            query += """
+                AND building_name = ?
+            """
+
+            params.append(
+                building
+            )
+
+        if access_point_id:
+            query += """
+                AND access_point_id = ?
+            """
+
+            params.append(
+                access_point_id
+            )
+
+        if severity:
+            query += """
+                AND severity = ?
+            """
+
+            params.append(
+                str(
+                    severity
+                ).upper()
+            )
+
+        query += """
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """
+
+        params.append(
+            int(limit)
+        )
+
+        rows = connection.execute(
+            query,
+            params,
+        ).fetchall()
+
+        return _rows_to_dicts(
+            rows
+        )
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# CREATE SECURITY ALERT
+# ============================================================
+
+def create_security_alert(alert):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        event_id = str(
+            alert.get(
+                "event_id",
+                "",
+            )
+        )
+
+        source_timestamp = str(
+            alert.get(
+                "source_timestamp",
+                alert.get(
+                    "timestamp",
+                    "",
+                ),
+            )
+        )
+
+        title = str(
+            alert.get(
+                "title",
+                "Security Alert",
+            )
+        )
+
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO security_alerts (
+                event_id,
+                source_timestamp,
+
+                facility_id,
+                facility_name,
+
+                building_id,
+                building_name,
+
+                block_id,
+                block_name,
+
+                access_point_id,
+                access_point_name,
+                zone_type,
+
+                user_id,
+                user_name,
+                user_type,
+
+                event_type,
+                access_status,
+
+                alert_type,
+
+                severity,
+                risk_score,
+
+                title,
+                message,
+                recommended_action,
+
+                status,
+
+                created_at
+            )
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+            """,
+            (
+                event_id,
+                source_timestamp,
+
+                str(
+                    alert.get(
+                        "facility_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "facility_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "building_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "building_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "block_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "block_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "access_point_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "access_point_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "zone_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "user_id",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "user_name",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "user_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "event_type",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "access_status",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "alert_type",
+                        "SECURITY_INCIDENT",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "severity",
+                        "MEDIUM",
+                    )
+                ),
+
+                safe_float(
+                    alert.get(
+                        "risk_score"
+                    )
+                ),
+
+                title,
+
+                str(
+                    alert.get(
+                        "message",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "recommended_action",
+                        "",
+                    )
+                ),
+
+                str(
+                    alert.get(
+                        "status",
+                        "OPEN",
+                    )
+                ).upper(),
+
+                datetime.now().isoformat(),
+            ),
+        )
+
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return None
+
+        return cursor.lastrowid
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# GET SECURITY ALERTS FROM DATABASE
+# ============================================================
+
+def get_security_alerts_db(
+    limit=50,
+    status=None,
+):
+    connection = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM security_alerts
+            WHERE 1 = 1
+        """
+
+        params = []
+
+        if status:
+            query += """
+                AND status = ?
+            """
+
+            params.append(
+                str(
+                    status
+                ).upper()
+            )
+
+        query += """
+            ORDER BY created_at DESC
+            LIMIT ?
+        """
+
+        params.append(
+            int(limit)
+        )
+
+        rows = connection.execute(
+            query,
+            params,
+        ).fetchall()
+
+        return _rows_to_dicts(
+            rows
+        )
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# UPDATE SECURITY ALERT STATUS
+# ============================================================
+
+def update_security_alert_status(
+    alert_id,
+    status,
+):
+    allowed = {
+        "OPEN",
+        "INVESTIGATING",
+        "RESOLVED",
+    }
+
+    status = str(
+        status
+    ).upper()
+
+    if status not in allowed:
+        raise ValueError(
+            "Invalid security alert status."
+        )
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            UPDATE security_alerts
+            SET status = ?
+            WHERE id = ?
+            """,
+            (
+                status,
+                int(alert_id),
+            ),
+        )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 3
+# DATABASE COUNTS
+# ============================================================
+
+def get_milestone3_database_counts():
+    connection = get_connection()
+
+    try:
+        tables = [
+            "occupancy_records",
+            "occupancy_alerts",
+            "security_events",
+            "security_alerts",
+        ]
+
+        counts = {}
+
+        for table in tables:
+            row = connection.execute(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM {table}
+                """
+            ).fetchone()
+
+            counts[table] = int(
+                row["total"]
+            )
+
+        return counts
+
+    finally:
         connection.close()

@@ -120,6 +120,57 @@ from backend.maintenance_service import (
 
 
 # ============================================================
+# MILESTONE 3 - OCCUPANCY SERVICE
+# ============================================================
+
+from backend.occupancy_service import (
+    sync_occupancy_data,
+    sync_occupancy_alerts,
+    get_occupancy_dashboard,
+    get_occupancy_agent_result,
+    get_occupancy_summary,
+    get_current_space_occupancy,
+    get_space_utilization,
+    get_building_occupancy,
+    get_occupancy_hourly_pattern,
+    get_occupancy_peak_hours,
+    get_occupancy_heatmap_data,
+    get_recent_overcrowding_events,
+    get_occupancy_underused_spaces,
+    get_occupancy_insights,
+    get_database_occupancy_records,
+    get_database_occupancy_alerts,
+    change_occupancy_alert_status,
+)
+
+
+# ============================================================
+# MILESTONE 3 - SECURITY SERVICE
+# ============================================================
+
+from backend.security_service import (
+    sync_security_data,
+    sync_security_agent_alerts,
+    get_security_dashboard,
+    get_security_agent_result,
+    get_security_summary,
+    get_recent_security_events,
+    get_recent_unauthorized_events,
+    get_recent_after_hours_events,
+    get_recent_cctv_events,
+    get_recent_security_alert_events,
+    get_security_access_points,
+    get_security_buildings,
+    get_security_hourly_pattern,
+    get_security_visitor_movement,
+    get_security_insights,
+    get_database_security_events,
+    get_database_security_alerts,
+    change_security_alert_status,
+)
+
+
+# ============================================================
 # PROJECT PATHS
 # ============================================================
 
@@ -163,10 +214,10 @@ STATIC_DIR = (
 app = FastAPI(
     title="FacilityOps AI",
     description=(
-        "Agentic Facility Operations, Energy Intelligence "
-        "and Predictive Maintenance Platform"
+        "Agentic Facility Operations, Energy, Maintenance, "
+        "Occupancy and Security Intelligence Platform"
     ),
-    version="2.0.0",
+    version="3.0.0",
 )
 
 
@@ -402,6 +453,44 @@ def startup_event():
             "database_counts": {},
         }
 
+    # ========================================================
+    # MILESTONE 3
+    # ========================================================
+
+    try:
+
+        occupancy_sync = sync_occupancy_data()
+
+    except Exception as error:
+
+        print(
+            "Occupancy data synchronisation warning:",
+            error
+        )
+
+        occupancy_sync = {
+            "dataset_rows": 0,
+            "inserted_rows": 0,
+            "database_rows": 0,
+        }
+
+    try:
+
+        security_sync = sync_security_data()
+
+    except Exception as error:
+
+        print(
+            "Security data synchronisation warning:",
+            error
+        )
+
+        security_sync = {
+            "dataset_rows": 0,
+            "inserted_rows": 0,
+            "database_rows": 0,
+        }
+
     maintenance_metrics = (
         get_maintenance_model_metrics()
     )
@@ -560,6 +649,32 @@ def startup_event():
         "Work orders newly stored:",
         maintenance_sync.get(
             "work_orders_newly_stored",
+            0
+        )
+    )
+
+    print()
+
+    print(
+        "MILESTONE 3 - OCCUPANCY & SECURITY INTELLIGENCE"
+    )
+
+    print(
+        "-----------------------------------------------"
+    )
+
+    print(
+        "Occupancy records available:",
+        occupancy_sync.get(
+            "database_rows",
+            0
+        )
+    )
+
+    print(
+        "Security events available:",
+        security_sync.get(
+            "database_rows",
             0
         )
     )
@@ -2174,6 +2289,406 @@ def maintenance_database_status_api(
 
 
 # ============================================================
+# MILESTONE 3
+# OCCUPANCY SUMMARY
+# ============================================================
+
+@app.get("/api/occupancy/summary")
+def occupancy_summary_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_summary()
+
+
+@app.get("/api/occupancy/dashboard")
+def occupancy_dashboard_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_dashboard()
+
+
+@app.get("/api/occupancy/spaces")
+def occupancy_spaces_api(
+    request: Request,
+):
+    require_user(request)
+    return get_current_space_occupancy()
+
+
+@app.get("/api/occupancy/utilization")
+def occupancy_utilization_api(
+    request: Request,
+):
+    require_user(request)
+    return get_space_utilization()
+
+
+@app.get("/api/occupancy/buildings")
+def occupancy_buildings_api(
+    request: Request,
+):
+    require_user(request)
+    return get_building_occupancy()
+
+
+@app.get("/api/occupancy/hourly-pattern")
+def occupancy_hourly_pattern_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_hourly_pattern()
+
+
+@app.get("/api/occupancy/peak-hours")
+def occupancy_peak_hours_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_peak_hours()
+
+
+@app.get("/api/occupancy/heatmap")
+def occupancy_heatmap_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_heatmap_data()
+
+
+@app.get("/api/occupancy/overcrowding")
+def occupancy_overcrowding_api(
+    request: Request,
+    limit: int = 20,
+):
+    require_user(request)
+    limit = max(1, min(limit, 200))
+    return get_recent_overcrowding_events(limit=limit)
+
+
+@app.get("/api/occupancy/underused")
+def occupancy_underused_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_underused_spaces()
+
+
+@app.get("/api/occupancy/insights")
+def occupancy_insights_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_insights()
+
+
+@app.get("/api/occupancy/agent")
+def occupancy_agent_api(
+    request: Request,
+):
+    require_user(request)
+    return get_occupancy_agent_result()
+
+
+@app.post("/api/occupancy/sync")
+def occupancy_sync_api(
+    request: Request,
+):
+    require_user(request)
+    return sync_occupancy_data()
+
+
+@app.post("/api/occupancy/alerts/sync")
+def occupancy_alert_sync_api(
+    request: Request,
+):
+    require_user(request)
+    return sync_occupancy_alerts()
+
+
+@app.get("/api/occupancy/records")
+def occupancy_records_api(
+    request: Request,
+    space_id: str = "",
+    building: str = "",
+    block: str = "",
+    limit: int = 500,
+):
+    require_user(request)
+    limit = max(1, min(limit, 5000))
+    return get_database_occupancy_records(
+        space_id=space_id if space_id else None,
+        building=building if building else None,
+        block=block if block else None,
+        limit=limit,
+    )
+
+
+@app.get("/api/occupancy/alerts")
+def occupancy_alerts_api(
+    request: Request,
+    limit: int = 50,
+    status: str = "",
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_database_occupancy_alerts(
+        limit=limit,
+        status=status.upper() if status else None,
+    )
+
+
+@app.put("/api/occupancy/alerts/{alert_id}/status")
+async def occupancy_alert_status_api(
+    alert_id: int,
+    request: Request,
+):
+    require_user(request)
+    body = await request.json()
+    status = str(body.get("status", "")).upper()
+
+    if not status:
+        raise HTTPException(
+            status_code=400,
+            detail="status is required",
+        )
+
+    try:
+        updated = change_occupancy_alert_status(
+            alert_id,
+            status,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
+
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail="Occupancy alert not found",
+        )
+
+    return {
+        "success": True,
+        "alert_id": alert_id,
+        "status": status,
+    }
+
+
+# ============================================================
+# MILESTONE 3
+# SECURITY INTELLIGENCE
+# ============================================================
+
+@app.get("/api/security/summary")
+def security_summary_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_summary()
+
+
+@app.get("/api/security/dashboard")
+def security_dashboard_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_dashboard()
+
+
+@app.get("/api/security/events")
+def security_events_api(
+    request: Request,
+    limit: int = 20,
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_recent_security_events(limit=limit)
+
+
+@app.get("/api/security/unauthorized")
+def security_unauthorized_api(
+    request: Request,
+    limit: int = 20,
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_recent_unauthorized_events(limit=limit)
+
+
+@app.get("/api/security/after-hours")
+def security_after_hours_api(
+    request: Request,
+    limit: int = 20,
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_recent_after_hours_events(limit=limit)
+
+
+@app.get("/api/security/cctv")
+def security_cctv_api(
+    request: Request,
+    limit: int = 20,
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_recent_cctv_events(limit=limit)
+
+
+@app.get("/api/security/alert-events")
+def security_alert_events_api(
+    request: Request,
+    limit: int = 20,
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_recent_security_alert_events(limit=limit)
+
+
+@app.get("/api/security/access-points")
+def security_access_points_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_access_points()
+
+
+@app.get("/api/security/buildings")
+def security_buildings_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_buildings()
+
+
+@app.get("/api/security/hourly-pattern")
+def security_hourly_pattern_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_hourly_pattern()
+
+
+@app.get("/api/security/visitors")
+def security_visitors_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_visitor_movement()
+
+
+@app.get("/api/security/insights")
+def security_insights_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_insights()
+
+
+@app.get("/api/security/agent")
+def security_agent_api(
+    request: Request,
+):
+    require_user(request)
+    return get_security_agent_result()
+
+
+@app.post("/api/security/sync")
+def security_sync_api(
+    request: Request,
+):
+    require_user(request)
+    return sync_security_data()
+
+
+@app.post("/api/security/alerts/sync")
+def security_alert_sync_api(
+    request: Request,
+):
+    require_user(request)
+    return sync_security_agent_alerts()
+
+
+@app.get("/api/security/database-events")
+def security_database_events_api(
+    request: Request,
+    event_id: str = "",
+    building: str = "",
+    access_point_id: str = "",
+    severity: str = "",
+    limit: int = 500,
+):
+    require_user(request)
+    limit = max(1, min(limit, 5000))
+    return get_database_security_events(
+        event_id=event_id if event_id else None,
+        building=building if building else None,
+        access_point_id=(
+            access_point_id if access_point_id else None
+        ),
+        severity=severity.upper() if severity else None,
+        limit=limit,
+    )
+
+
+@app.get("/api/security/alerts")
+def security_alerts_api(
+    request: Request,
+    limit: int = 50,
+    status: str = "",
+):
+    require_user(request)
+    limit = max(1, min(limit, 500))
+    return get_database_security_alerts(
+        limit=limit,
+        status=status.upper() if status else None,
+    )
+
+
+@app.put("/api/security/alerts/{alert_id}/status")
+async def security_alert_status_api(
+    alert_id: int,
+    request: Request,
+):
+    require_user(request)
+    body = await request.json()
+    status = str(body.get("status", "")).upper()
+
+    if not status:
+        raise HTTPException(
+            status_code=400,
+            detail="status is required",
+        )
+
+    try:
+        updated = change_security_alert_status(
+            alert_id,
+            status,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
+
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail="Security alert not found",
+        )
+
+    return {
+        "success": True,
+        "alert_id": alert_id,
+        "status": status,
+    }
+
+
+# ============================================================
 # SYSTEM HEALTH
 # ============================================================
 
@@ -2211,8 +2726,10 @@ def health():
 
         "milestones":
             [
-                "Milestone 1 - Energy Intelligence",
-                "Milestone 2 - Predictive Maintenance",
+                "Energy Intelligence",
+                "Predictive Maintenance",
+                "Occupancy Intelligence",
+                "Security Intelligence",
             ],
 
         "energy_monitoring_agent":
@@ -2226,6 +2743,12 @@ def health():
             ),
 
         "maintenance_agent":
+            "ACTIVE",
+
+        "occupancy_agent":
+            "ACTIVE",
+
+        "security_agent":
             "ACTIVE",
 
         "maintenance_prediction_model":
