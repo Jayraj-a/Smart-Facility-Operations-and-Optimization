@@ -9,6 +9,7 @@
    Predictive Maintenance
    Occupancy Intelligence
    Security Intelligence
+   Cost Optimization
    ============================================================ */
 
 
@@ -116,6 +117,26 @@ function percentValue(value) {
     }
 
     return number.toFixed(1) + "%";
+
+}
+
+
+function currencyValue(value) {
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "₹--";
+    }
+
+    return "₹" +
+        number.toLocaleString(
+            "en-IN",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
 
 }
 
@@ -573,6 +594,62 @@ function buildURL(
 
     const parameters =
         queryParams(additional);
+
+    const query =
+        parameters.toString();
+
+    return query
+        ? `${path}?${query}`
+        : path;
+
+}
+
+
+/*
+    Cost endpoints support the building filter,
+    but do not use the Energy/Occupancy block filter.
+*/
+
+function costURL(
+    path,
+    additional = {}
+) {
+
+    const parameters =
+        new URLSearchParams();
+
+    const building =
+        selectedBuilding();
+
+    if (building) {
+
+        parameters.set(
+            "building",
+            building
+        );
+
+    }
+
+    Object.entries(
+        additional
+    ).forEach(
+        ([key, value]) => {
+
+            if (
+                value !== undefined &&
+                value !== null &&
+                value !== ""
+            ) {
+
+                parameters.set(
+                    key,
+                    value
+                );
+
+            }
+
+        }
+    );
 
     const query =
         parameters.toString();
@@ -1595,10 +1672,165 @@ async function loadConsumptionAlerts() {
     }
 
 }
+/* ============================================================
+   GENERIC ALERT RENDERER
+   ============================================================ */
+
+function renderAlertCards(
+    elementId,
+    alerts,
+    emptyTitle,
+    emptyMessage
+) {
+
+    const container =
+        document.getElementById(
+            elementId
+        );
+
+    if (!container) {
+        return;
+    }
+
+
+    if (
+        !Array.isArray(alerts) ||
+        alerts.length === 0
+    ) {
+
+        showEmpty(
+            elementId,
+            emptyTitle,
+            emptyMessage
+        );
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        alerts
+            .slice(0, 30)
+            .map(
+                alert => {
+
+                    const priority =
+                        normalizeStatus(
+                            firstDefined(
+                                alert,
+                                [
+                                    "priority",
+                                    "severity",
+                                    "risk_level",
+                                    "level"
+                                ],
+                                "LOW"
+                            )
+                        );
+
+
+                    const title =
+                        firstDefined(
+                            alert,
+                            [
+                                "title",
+                                "alert_type",
+                                "type",
+                                "issue_type"
+                            ],
+                            "Facility Alert"
+                        );
+
+
+                    const message =
+                        firstDefined(
+                            alert,
+                            [
+                                "message",
+                                "description",
+                                "recommendation",
+                                "recommended_action"
+                            ],
+                            "Facility condition requires review."
+                        );
+
+
+                    const building =
+                        firstDefined(
+                            alert,
+                            [
+                                "building_name",
+                                "building"
+                            ],
+                            ""
+                        );
+
+
+                    const timestamp =
+                        firstDefined(
+                            alert,
+                            [
+                                "timestamp",
+                                "created_at",
+                                "detected_at",
+                                "alert_timestamp"
+                            ],
+                            ""
+                        );
+
+
+                    return `
+                        <article class="alert-item">
+
+                            <div class="card-topline">
+
+                                <h3 class="card-title">
+                                    ${escapeHTML(title)}
+                                </h3>
+
+                                <span class="priority-badge ${priorityClass(priority)}">
+                                    ${escapeHTML(priority)}
+                                </span>
+
+                            </div>
+
+                            ${
+                                building || timestamp
+                                    ? `
+                                        <div class="card-meta">
+                                            ${escapeHTML(building)}
+                                            ${
+                                                timestamp
+                                                    ? " · " +
+                                                      escapeHTML(
+                                                          timestampValue(
+                                                              timestamp
+                                                          )
+                                                      )
+                                                    : ""
+                                            }
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+                            <p class="card-message">
+                                ${escapeHTML(message)}
+                            </p>
+
+                        </article>
+                    `;
+
+                }
+            )
+            .join("");
+
+}
 
 
 /* ============================================================
-   MAINTENANCE
+   MAINTENANCE AGENT
    ============================================================ */
 
 async function runMaintenanceAgent() {
@@ -1621,109 +1853,148 @@ async function runMaintenanceAgent() {
 }
 
 
+/* ============================================================
+   MAINTENANCE SUMMARY
+   ============================================================ */
+
 async function loadMaintenanceSummary() {
 
     try {
 
-        const data =
+        const response =
             await getJSON(
                 buildURL(
                     "/api/maintenance/summary"
                 )
             );
 
+
         const summary =
-            (
-                data.summary &&
-                typeof data.summary === "object"
-            )
-                ? data.summary
-                : data;
+            response.summary &&
+            typeof response.summary === "object"
+                ? response.summary
+                : response;
+
+
+        const totalAssets =
+            firstDefined(
+                summary,
+                [
+                    "total_assets",
+                    "asset_count",
+                    "assets"
+                ],
+                0
+            );
+
+
+        const healthyAssets =
+            firstDefined(
+                summary,
+                [
+                    "healthy_assets",
+                    "healthy_count",
+                    "healthy"
+                ],
+                0
+            );
+
+
+        const warningAssets =
+            firstDefined(
+                summary,
+                [
+                    "warning_assets",
+                    "warning_count",
+                    "warning"
+                ],
+                0
+            );
+
+
+        const criticalAssets =
+            firstDefined(
+                summary,
+                [
+                    "critical_assets",
+                    "critical_count",
+                    "critical"
+                ],
+                0
+            );
+
+
+        const healthScore =
+            firstDefined(
+                summary,
+                [
+                    "average_health_score",
+                    "avg_health_score",
+                    "health_score",
+                    "equipment_health_score"
+                ],
+                0
+            );
+
+
+        const maintenanceDue =
+            firstDefined(
+                summary,
+                [
+                    "maintenance_due",
+                    "due_maintenance",
+                    "maintenance_due_count",
+                    "upcoming_maintenance"
+                ],
+                0
+            );
+
 
         setText(
-            "maintenanceAssetsMetric",
+            "assetCountMetric",
             integerValue(
-                firstDefined(
-                    summary,
-                    [
-                        "assets_monitored",
-                        "assets",
-                        "total_assets"
-                    ],
-                    0
-                )
+                totalAssets
             )
         );
 
+
         setText(
-            "maintenanceHealthMetric",
+            "healthyAssetMetric",
+            integerValue(
+                healthyAssets
+            )
+        );
+
+
+        setText(
+            "warningAssetMetric",
+            integerValue(
+                warningAssets
+            )
+        );
+
+
+        setText(
+            "criticalAssetMetric",
+            integerValue(
+                criticalAssets
+            )
+        );
+
+
+        setText(
+            "equipmentHealthMetric",
             numberValue(
-                firstDefined(
-                    summary,
-                    [
-                        "average_health_score",
-                        "average_health",
-                        "health_score"
-                    ],
-                    0
-                ),
+                healthScore,
                 1
             )
         );
 
-        setText(
-            "excellentAssetsMetric",
-            integerValue(
-                firstDefined(
-                    summary,
-                    [
-                        "excellent_assets",
-                        "excellent"
-                    ],
-                    0
-                )
-            )
-        );
 
         setText(
-            "goodAssetsMetric",
+            "maintenanceDueMetric",
             integerValue(
-                firstDefined(
-                    summary,
-                    [
-                        "good_assets",
-                        "good"
-                    ],
-                    0
-                )
-            )
-        );
-
-        setText(
-            "warningAssetsMetric",
-            integerValue(
-                firstDefined(
-                    summary,
-                    [
-                        "warning_assets",
-                        "warning"
-                    ],
-                    0
-                )
-            )
-        );
-
-        setText(
-            "criticalAssetsMetric",
-            integerValue(
-                firstDefined(
-                    summary,
-                    [
-                        "critical_assets",
-                        "critical"
-                    ],
-                    0
-                )
+                maintenanceDue
             )
         );
 
@@ -1739,6 +2010,10 @@ async function loadMaintenanceSummary() {
 }
 
 
+/* ============================================================
+   ASSET MONITORING
+   ============================================================ */
+
 async function loadAssetMonitoring() {
 
     const container =
@@ -1750,268 +2025,41 @@ async function loadAssetMonitoring() {
         return;
     }
 
-    try {
-
-        let response;
-
-        try {
-
-            response =
-                await getJSON(
-                    buildURL(
-                        "/api/maintenance/readings",
-                        {
-                            limit: 100
-                        }
-                    )
-                );
-
-        } catch (error) {
-
-            response =
-                await getJSON(
-                    buildURL(
-                        "/api/maintenance/assets"
-                    )
-                );
-
-        }
-
-        const rows =
-            extractArray(
-                response,
-                [
-                    "readings",
-                    "assets",
-                    "data",
-                    "records",
-                    "items"
-                ]
-            );
-
-        if (!rows.length) {
-
-            showEmpty(
-                "assetMonitoringTable",
-                "No Asset Data",
-                "No equipment monitoring data is currently available."
-            );
-
-            return;
-
-        }
-
-        const latestMap =
-            new Map();
-
-        rows.forEach(
-            row => {
-
-                const assetId =
-                    firstDefined(
-                        row,
-                        [
-                            "asset_id",
-                            "id",
-                            "asset_name"
-                        ],
-                        "asset"
-                    );
-
-                const previous =
-                    latestMap.get(
-                        assetId
-                    );
-
-                if (!previous) {
-
-                    latestMap.set(
-                        assetId,
-                        row
-                    );
-
-                    return;
-                }
-
-                const currentTime =
-                    new Date(
-                        firstDefined(
-                            row,
-                            [
-                                "timestamp",
-                                "reading_timestamp"
-                            ],
-                            0
-                        )
-                    ).getTime();
-
-                const previousTime =
-                    new Date(
-                        firstDefined(
-                            previous,
-                            [
-                                "timestamp",
-                                "reading_timestamp"
-                            ],
-                            0
-                        )
-                    ).getTime();
-
-                if (
-                    currentTime >
-                    previousTime
-                ) {
-
-                    latestMap.set(
-                        assetId,
-                        row
-                    );
-
-                }
-
-            }
-        );
-
-        const latestRows =
-            Array.from(
-                latestMap.values()
-            );
-
-        container.innerHTML = `
-            <table class="data-table">
-
-                <thead>
-                    <tr>
-                        <th>Asset</th>
-                        <th>Location</th>
-                        <th>Temperature</th>
-                        <th>Vibration</th>
-                        <th>Pressure</th>
-                        <th>Power</th>
-                        <th>Age</th>
-                        <th>Service Age</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    ${
-                        latestRows
-                            .map(
-                                row => `
-                                    <tr>
-
-                                        <td>
-                                            <span class="asset-name">
-                                                ${escapeHTML(firstDefined(row, ["asset_name", "name"], "Equipment"))}
-                                            </span>
-
-                                            <span class="sub-text">
-                                                ${escapeHTML(firstDefined(row, ["asset_id", "id"], "--"))}
-                                            </span>
-                                        </td>
-
-                                        <td>
-                                            ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
-                                            <span class="sub-text">
-                                                ${escapeHTML(firstDefined(row, ["block_name", "block"], ""))}
-                                            </span>
-                                        </td>
-
-                                        <td>
-                                            ${numberValue(firstDefined(row, ["temperature_c", "temperature"], null), 1)} °C
-                                        </td>
-
-                                        <td>
-                                            ${numberValue(firstDefined(row, ["vibration_mm_s", "vibration"], null), 2)} mm/s
-                                        </td>
-
-                                        <td>
-                                            ${numberValue(firstDefined(row, ["pressure_bar", "pressure"], null), 2)} bar
-                                        </td>
-
-                                        <td>
-                                            ${numberValue(firstDefined(row, ["power_kw", "power"], null), 1)} kW
-                                        </td>
-
-                                        <td>
-                                            ${numberValue(firstDefined(row, ["age_years", "age"], null), 1)} yr
-                                        </td>
-
-                                        <td>
-                                            ${integerValue(firstDefined(row, ["days_since_service"], null))} days
-                                        </td>
-
-                                    </tr>
-                                `
-                            )
-                            .join("")
-                    }
-
-                </tbody>
-
-            </table>
-        `;
-
-    } catch (error) {
-
-        showError(
-            "assetMonitoringTable",
-            "Unable to load asset monitoring data."
-        );
-
-    }
-
-}
-
-
-async function loadEquipmentHealth() {
-
-    const container =
-        document.getElementById(
-            "equipmentHealthTable"
-        );
-
-    if (!container) {
-        return;
-    }
 
     try {
 
         const response =
             await getJSON(
                 buildURL(
-                    "/api/maintenance/health"
+                    "/api/maintenance/assets"
                 )
             );
 
-        const rows =
+
+        const assets =
             extractArray(
                 response,
                 [
                     "assets",
-                    "health",
                     "data",
                     "records",
                     "items"
                 ]
             );
 
-        drawMaintenanceHealthChart(
-            rows
-        );
 
-        if (!rows.length) {
+        if (!assets.length) {
 
             showEmpty(
-                "equipmentHealthTable",
-                "No Health Data",
-                "No equipment health scores are currently available."
+                "assetMonitoringTable",
+                "No Assets",
+                "No monitored facility assets are currently available."
             );
 
             return;
 
         }
+
 
         container.innerHTML = `
             <table class="data-table">
@@ -2019,82 +2067,115 @@ async function loadEquipmentHealth() {
                 <thead>
                     <tr>
                         <th>Asset</th>
-                        <th>Type</th>
                         <th>Building</th>
-                        <th>Health Score</th>
+                        <th>Type</th>
+                        <th>Health</th>
                         <th>Status</th>
-                        <th>Maintenance Risk</th>
+                        <th>Risk</th>
                     </tr>
                 </thead>
 
                 <tbody>
 
                     ${
-                        rows
+                        assets
                             .map(
-                                row => {
+                                asset => {
+
+                                    const name =
+                                        firstDefined(
+                                            asset,
+                                            [
+                                                "asset_name",
+                                                "name",
+                                                "asset_id"
+                                            ],
+                                            "--"
+                                        );
+
+
+                                    const building =
+                                        firstDefined(
+                                            asset,
+                                            [
+                                                "building_name",
+                                                "building"
+                                            ],
+                                            "--"
+                                        );
+
+
+                                    const type =
+                                        firstDefined(
+                                            asset,
+                                            [
+                                                "asset_type",
+                                                "equipment_type",
+                                                "type"
+                                            ],
+                                            "--"
+                                        );
+
 
                                     const health =
-                                        Number(
-                                            firstDefined(
-                                                row,
-                                                [
-                                                    "equipment_health_score",
-                                                    "health_score",
-                                                    "score"
-                                                ],
-                                                0
-                                            )
+                                        firstDefined(
+                                            asset,
+                                            [
+                                                "health_score",
+                                                "equipment_health_score",
+                                                "health"
+                                            ],
+                                            0
                                         );
+
 
                                     const status =
                                         normalizeStatus(
                                             firstDefined(
-                                                row,
+                                                asset,
                                                 [
-                                                    "equipment_health_status",
                                                     "health_status",
-                                                    "status"
+                                                    "status",
+                                                    "condition"
                                                 ],
-                                                "UNKNOWN"
+                                                "NORMAL"
                                             )
                                         );
 
+
                                     const risk =
-                                        firstDefined(
-                                            row,
-                                            [
-                                                "maintenance_probability_percent",
-                                                "maintenance_probability",
-                                                "maintenance_risk",
-                                                "probability"
-                                            ],
-                                            null
+                                        normalizeStatus(
+                                            firstDefined(
+                                                asset,
+                                                [
+                                                    "risk_level",
+                                                    "maintenance_risk",
+                                                    "priority"
+                                                ],
+                                                "LOW"
+                                            )
                                         );
+
 
                                     return `
                                         <tr>
 
                                             <td>
                                                 <span class="asset-name">
-                                                    ${escapeHTML(firstDefined(row, ["asset_name", "name"], "Equipment"))}
-                                                </span>
-
-                                                <span class="sub-text">
-                                                    ${escapeHTML(firstDefined(row, ["asset_id", "id"], "--"))}
+                                                    ${escapeHTML(name)}
                                                 </span>
                                             </td>
 
                                             <td>
-                                                ${escapeHTML(firstDefined(row, ["asset_type", "type"], "--"))}
+                                                ${escapeHTML(building)}
                                             </td>
 
                                             <td>
-                                                ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
+                                                ${escapeHTML(type)}
                                             </td>
 
                                             <td>
-                                                ${numberValue(health, 1)} / 100
+                                                ${numberValue(health, 1)}
                                             </td>
 
                                             <td>
@@ -2104,15 +2185,9 @@ async function loadEquipmentHealth() {
                                             </td>
 
                                             <td>
-                                                ${
-                                                    risk === null
-                                                        ? "--"
-                                                        : (
-                                                            row.maintenance_probability_percent !== undefined
-                                                                ? numberValue(risk, 2) + "%"
-                                                                : percentValue(risk)
-                                                        )
-                                                }
+                                                <span class="priority-badge ${priorityClass(risk)}">
+                                                    ${escapeHTML(risk)}
+                                                </span>
                                             </td>
 
                                         </tr>
@@ -2130,9 +2205,15 @@ async function loadEquipmentHealth() {
 
     } catch (error) {
 
+        console.error(
+            "Asset monitoring failed:",
+            error
+        );
+
+
         showError(
-            "equipmentHealthTable",
-            "Unable to load equipment health scores."
+            "assetMonitoringTable",
+            "Unable to load monitored assets."
         );
 
     }
@@ -2140,82 +2221,153 @@ async function loadEquipmentHealth() {
 }
 
 
-function drawMaintenanceHealthChart(rows) {
+/* ============================================================
+   EQUIPMENT HEALTH
+   ============================================================ */
 
-    const element =
-        document.getElementById(
-            "maintenanceHealthChart"
-        );
+async function loadEquipmentHealth() {
 
-    if (
-        !element ||
-        typeof Plotly === "undefined"
-    ) {
-        return;
-    }
+    try {
 
-    const names =
-        rows.map(
-            row =>
-                firstDefined(
-                    row,
-                    [
-                        "asset_name",
-                        "asset_id",
-                        "name"
-                    ],
-                    "Asset"
+        const response =
+            await getJSON(
+                buildURL(
+                    "/api/maintenance/equipment-health"
                 )
-        );
+            );
 
-    const scores =
-        rows.map(
-            row =>
-                Number(
+
+        const rows =
+            extractArray(
+                response,
+                [
+                    "equipment",
+                    "assets",
+                    "health",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+
+        const element =
+            document.getElementById(
+                "maintenanceHealthChart"
+            );
+
+
+        if (
+            !element ||
+            typeof Plotly === "undefined"
+        ) {
+            return;
+        }
+
+
+        if (!rows.length) {
+
+            Plotly.purge(
+                element
+            );
+
+            return;
+
+        }
+
+
+        const names =
+            rows.map(
+                row =>
                     firstDefined(
                         row,
                         [
-                            "equipment_health_score",
-                            "health_score",
-                            "score"
+                            "asset_name",
+                            "name",
+                            "asset_id"
                         ],
-                        0
+                        "Asset"
                     )
-                )
+            );
+
+
+        const scores =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "health_score",
+                                "equipment_health_score",
+                                "score"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+
+        const layout =
+            commonLayout();
+
+
+        layout.height = 360;
+
+        layout.showlegend =
+            false;
+
+
+        layout.yaxis = {
+            ...layout.yaxis,
+            title:
+                "Health Score",
+            range:
+                [0, 100]
+        };
+
+
+        Plotly.react(
+            element,
+            [
+                {
+                    x:
+                        names,
+
+                    y:
+                        scores,
+
+                    type:
+                        "bar",
+
+                    marker: {
+                        color:
+                            COLORS.teal
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Health: %{y:.1f}<extra></extra>"
+                }
+            ],
+            layout,
+            plotConfig
         );
 
-    const layout =
-        commonLayout();
+    } catch (error) {
 
-    layout.height = 350;
-    layout.showlegend = false;
+        console.error(
+            "Equipment health failed:",
+            error
+        );
 
-    layout.yaxis = {
-        ...layout.yaxis,
-        title: "Health Score",
-        range: [0, 100]
-    };
-
-    Plotly.react(
-        element,
-        [
-            {
-                x: names,
-                y: scores,
-                type: "bar",
-
-                marker: {
-                    color:
-                        COLORS.teal
-                }
-            }
-        ],
-        layout,
-        plotConfig
-    );
+    }
 
 }
 
+
+/* ============================================================
+   MAINTENANCE BUILDING COMPARISON
+   ============================================================ */
 
 async function loadMaintenanceBuildingComparison() {
 
@@ -2223,10 +2375,9 @@ async function loadMaintenanceBuildingComparison() {
 
         const response =
             await getJSON(
-                buildURL(
-                    "/api/maintenance/building-comparison"
-                )
+                "/api/maintenance/buildings"
             );
+
 
         const rows =
             extractArray(
@@ -2240,10 +2391,12 @@ async function loadMaintenanceBuildingComparison() {
                 ]
             );
 
+
         const element =
             document.getElementById(
                 "maintenanceBuildingChart"
             );
+
 
         if (
             !element ||
@@ -2251,6 +2404,18 @@ async function loadMaintenanceBuildingComparison() {
         ) {
             return;
         }
+
+
+        if (!rows.length) {
+
+            Plotly.purge(
+                element
+            );
+
+            return;
+
+        }
+
 
         const names =
             rows.map(
@@ -2266,7 +2431,8 @@ async function loadMaintenanceBuildingComparison() {
                     )
             );
 
-        const scores =
+
+        const health =
             rows.map(
                 row =>
                     Number(
@@ -2274,38 +2440,54 @@ async function loadMaintenanceBuildingComparison() {
                             row,
                             [
                                 "average_health_score",
-                                "health_score",
-                                "average_health"
+                                "avg_health_score",
+                                "health_score"
                             ],
                             0
                         )
                     )
             );
 
+
         const layout =
             commonLayout();
 
-        layout.height = 350;
-        layout.showlegend = false;
+
+        layout.height = 360;
+
+        layout.showlegend =
+            false;
+
 
         layout.yaxis = {
             ...layout.yaxis,
-            title: "Average Health",
-            range: [0, 100]
+            title:
+                "Average Health Score",
+            range:
+                [0, 100]
         };
+
 
         Plotly.react(
             element,
             [
                 {
-                    x: names,
-                    y: scores,
-                    type: "bar",
+                    x:
+                        names,
+
+                    y:
+                        health,
+
+                    type:
+                        "bar",
 
                     marker: {
                         color:
                             COLORS.hvac
-                    }
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Health: %{y:.1f}<extra></extra>"
                 }
             ],
             layout,
@@ -2324,16 +2506,22 @@ async function loadMaintenanceBuildingComparison() {
 }
 
 
+/* ============================================================
+   MAINTENANCE SCHEDULE
+   ============================================================ */
+
 async function loadMaintenanceSchedule() {
 
     const container =
         document.getElementById(
-            "maintenanceScheduleTable"
+            "maintenanceSchedule"
         );
+
 
     if (!container) {
         return;
     }
+
 
     try {
 
@@ -2344,29 +2532,32 @@ async function loadMaintenanceSchedule() {
                 )
             );
 
+
         const rows =
             extractArray(
                 response,
                 [
                     "schedule",
-                    "assets",
-                    "data",
+                    "maintenance_schedule",
                     "records",
+                    "data",
                     "items"
                 ]
             );
 
+
         if (!rows.length) {
 
             showEmpty(
-                "maintenanceScheduleTable",
-                "No Maintenance Schedule",
-                "No maintenance schedule is currently available."
+                "maintenanceSchedule",
+                "No Scheduled Maintenance",
+                "No maintenance activities are currently scheduled."
             );
 
             return;
 
         }
+
 
         container.innerHTML = `
             <table class="data-table">
@@ -2374,11 +2565,11 @@ async function loadMaintenanceSchedule() {
                 <thead>
                     <tr>
                         <th>Asset</th>
-                        <th>Health</th>
-                        <th>Risk</th>
+                        <th>Building</th>
+                        <th>Maintenance</th>
+                        <th>Scheduled Date</th>
                         <th>Priority</th>
-                        <th>Recommended Service</th>
-                        <th>Reason</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
 
@@ -2395,51 +2586,88 @@ async function loadMaintenanceSchedule() {
                                                 row,
                                                 [
                                                     "priority",
-                                                    "maintenance_priority"
+                                                    "risk_level",
+                                                    "severity"
                                                 ],
                                                 "LOW"
                                             )
                                         );
 
-                                    const risk =
-                                        firstDefined(
-                                            row,
-                                            [
-                                                "maintenance_probability_percent",
-                                                "maintenance_probability",
-                                                "maintenance_risk",
-                                                "probability"
-                                            ],
-                                            null
+
+                                    const status =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "status",
+                                                    "work_order_status"
+                                                ],
+                                                "PENDING"
+                                            )
                                         );
+
 
                                     return `
                                         <tr>
 
                                             <td>
                                                 <span class="asset-name">
-                                                    ${escapeHTML(firstDefined(row, ["asset_name", "name"], "Equipment"))}
-                                                </span>
-
-                                                <span class="sub-text">
-                                                    ${escapeHTML(firstDefined(row, ["asset_id", "id"], "--"))}
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                ${numberValue(firstDefined(row, ["equipment_health_score", "health_score"], null), 1)}
-                                            </td>
-
-                                            <td>
-                                                ${
-                                                    risk === null
-                                                        ? "--"
-                                                        : (
-                                                            row.maintenance_probability_percent !== undefined
-                                                                ? numberValue(risk, 2) + "%"
-                                                                : percentValue(risk)
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "asset_name",
+                                                                "asset_id",
+                                                                "name"
+                                                            ],
+                                                            "--"
                                                         )
-                                                }
+                                                    )}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "building_name",
+                                                            "building"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "maintenance_type",
+                                                            "work_type",
+                                                            "recommendation",
+                                                            "description"
+                                                        ],
+                                                        "Preventive Maintenance"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    dateValue(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "scheduled_date",
+                                                                "due_date",
+                                                                "maintenance_date"
+                                                            ],
+                                                            ""
+                                                        )
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
@@ -2449,26 +2677,9 @@ async function loadMaintenanceSchedule() {
                                             </td>
 
                                             <td>
-                                                ${escapeHTML(
-                                                    dateValue(
-                                                        firstDefined(
-                                                            row,
-                                                            [
-                                                                "recommended_maintenance_date",
-                                                                "recommended_service_date",
-                                                                "scheduled_date",
-                                                                "maintenance_date",
-                                                                "service_date",
-                                                                "due_date"
-                                                            ],
-                                                            ""
-                                                        )
-                                                    )
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                ${escapeHTML(firstDefined(row, ["reason", "message", "recommendation"], "Scheduled equipment service"))}
+                                                <span class="status-badge ${statusClass(status)}">
+                                                    ${escapeHTML(status)}
+                                                </span>
                                             </td>
 
                                         </tr>
@@ -2486,8 +2697,14 @@ async function loadMaintenanceSchedule() {
 
     } catch (error) {
 
+        console.error(
+            "Maintenance schedule failed:",
+            error
+        );
+
+
         showError(
-            "maintenanceScheduleTable",
+            "maintenanceSchedule",
             "Unable to load the maintenance schedule."
         );
 
@@ -2496,7 +2713,22 @@ async function loadMaintenanceSchedule() {
 }
 
 
+/* ============================================================
+   MAINTENANCE ALERTS
+   ============================================================ */
+
 async function loadMaintenanceAlerts() {
+
+    const container =
+        document.getElementById(
+            "maintenanceAlerts"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
 
     try {
 
@@ -2506,6 +2738,7 @@ async function loadMaintenanceAlerts() {
                     "/api/maintenance/alerts"
                 )
             );
+
 
         const alerts =
             extractArray(
@@ -2518,11 +2751,12 @@ async function loadMaintenanceAlerts() {
                 ]
             );
 
+
         renderAlertCards(
             "maintenanceAlerts",
             alerts,
             "No Maintenance Alerts",
-            "No active equipment maintenance alerts are currently stored."
+            "No active maintenance alerts are currently available."
         );
 
     } catch (error) {
@@ -2537,6 +2771,10 @@ async function loadMaintenanceAlerts() {
 }
 
 
+/* ============================================================
+   MAINTENANCE WORK ORDERS
+   ============================================================ */
+
 async function loadMaintenanceWorkOrders() {
 
     const container =
@@ -2544,9 +2782,11 @@ async function loadMaintenanceWorkOrders() {
             "maintenanceWorkOrders"
         );
 
+
     if (!container) {
         return;
     }
+
 
     try {
 
@@ -2557,7 +2797,8 @@ async function loadMaintenanceWorkOrders() {
                 )
             );
 
-        const orders =
+
+        const rows =
             extractArray(
                 response,
                 [
@@ -2569,7 +2810,8 @@ async function loadMaintenanceWorkOrders() {
                 ]
             );
 
-        if (!orders.length) {
+
+        if (!rows.length) {
 
             showEmpty(
                 "maintenanceWorkOrders",
@@ -2581,57 +2823,145 @@ async function loadMaintenanceWorkOrders() {
 
         }
 
-        container.innerHTML =
-            orders
-                .slice(0, 30)
-                .map(
-                    order => {
 
-                        const priority =
-                            normalizeStatus(
-                                firstDefined(
-                                    order,
-                                    [
-                                        "priority",
-                                        "severity"
-                                    ],
-                                    "LOW"
-                                )
-                            );
+        container.innerHTML = `
+            <table class="data-table">
 
-                        return `
-                            <article class="work-order-card">
+                <thead>
+                    <tr>
+                        <th>Work Order</th>
+                        <th>Asset</th>
+                        <th>Building</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
 
-                                <div class="card-topline">
+                <tbody>
 
-                                    <h3 class="card-title">
-                                        ${escapeHTML(firstDefined(order, ["asset_name", "title"], "Equipment Work Order"))}
-                                    </h3>
+                    ${
+                        rows
+                            .map(
+                                row => {
 
-                                    <span class="priority-badge ${priorityClass(priority)}">
-                                        ${escapeHTML(priority)}
-                                    </span>
+                                    const priority =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "priority",
+                                                    "severity"
+                                                ],
+                                                "LOW"
+                                            )
+                                        );
 
-                                </div>
 
-                                <div class="card-meta">
-                                    ${escapeHTML(firstDefined(order, ["asset_id"], "Equipment"))}
-                                    · Status:
-                                    ${escapeHTML(firstDefined(order, ["status", "work_order_status"], "OPEN"))}
-                                </div>
+                                    const status =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "status",
+                                                    "work_order_status"
+                                                ],
+                                                "OPEN"
+                                            )
+                                        );
 
-                                <p class="card-message">
-                                    ${escapeHTML(firstDefined(order, ["description", "message", "recommended_action", "recommendation"], "Perform recommended equipment maintenance."))}
-                                </p>
 
-                            </article>
-                        `;
+                                    return `
+                                        <tr>
 
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "work_order_id",
+                                                            "id"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span class="asset-name">
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "asset_name",
+                                                                "asset_id"
+                                                            ],
+                                                            "--"
+                                                        )
+                                                    )}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "building_name",
+                                                            "building"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span class="priority-badge ${priorityClass(priority)}">
+                                                    ${escapeHTML(priority)}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                <span class="status-badge ${statusClass(status)}">
+                                                    ${escapeHTML(status)}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    timestampValue(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "created_at",
+                                                                "timestamp"
+                                                            ],
+                                                            ""
+                                                        )
+                                                    )
+                                                )}
+                                            </td>
+
+                                        </tr>
+                                    `;
+
+                                }
+                            )
+                            .join("")
                     }
-                )
-                .join("");
+
+                </tbody>
+
+            </table>
+        `;
 
     } catch (error) {
+
+        console.error(
+            "Maintenance work orders failed:",
+            error
+        );
+
 
         showError(
             "maintenanceWorkOrders",
@@ -2651,57 +2981,135 @@ async function loadOccupancySummary() {
 
     try {
 
-        const data =
+        const response =
             await getJSON(
-                "/api/occupancy/summary"
+                buildURL(
+                    "/api/occupancy/summary"
+                )
             );
 
+
+        const summary =
+            response.summary &&
+            typeof response.summary === "object"
+                ? response.summary
+                : response;
+
+
+        const currentOccupancy =
+            firstDefined(
+                summary,
+                [
+                    "current_occupancy",
+                    "total_current_occupancy",
+                    "occupancy"
+                ],
+                0
+            );
+
+
+        const totalCapacity =
+            firstDefined(
+                summary,
+                [
+                    "total_capacity",
+                    "capacity"
+                ],
+                0
+            );
+
+
+        const currentUtilization =
+            firstDefined(
+                summary,
+                [
+                    "current_utilization_percent",
+                    "current_utilization",
+                    "utilization_percent"
+                ],
+                0
+            );
+
+
+        const averageUtilization =
+            firstDefined(
+                summary,
+                [
+                    "average_utilization_percent",
+                    "avg_utilization_percent",
+                    "average_utilization"
+                ],
+                0
+            );
+
+
+        const peakOccupancy =
+            firstDefined(
+                summary,
+                [
+                    "peak_occupancy",
+                    "maximum_occupancy"
+                ],
+                0
+            );
+
+
+        const overcrowding =
+            firstDefined(
+                summary,
+                [
+                    "overcrowding_events",
+                    "overcrowded_events",
+                    "overcrowding_count"
+                ],
+                0
+            );
+
+
         setText(
-            "occupancySpacesMetric",
+            "currentOccupancyMetric",
             integerValue(
-                data.spaces_monitored
+                currentOccupancy
             )
         );
 
-        setText(
-            "occupancyCurrentMetric",
-            integerValue(
-                data.current_occupancy
-            )
-        );
-
-        setText(
-            "currentOccupancyOverviewMetric",
-            integerValue(
-                data.current_occupancy
-            )
-        );
 
         setText(
             "occupancyCapacityMetric",
             integerValue(
-                data.total_capacity
+                totalCapacity
             )
         );
+
 
         setText(
             "occupancyUtilizationMetric",
             percentValue(
-                data.current_utilization_percent
+                currentUtilization
             )
         );
 
+
         setText(
-            "occupancyUnderusedMetric",
-            integerValue(
-                data.underused_spaces
+            "averageUtilizationMetric",
+            percentValue(
+                averageUtilization
             )
         );
 
+
         setText(
-            "occupancyOvercrowdedMetric",
+            "peakOccupancyMetric",
             integerValue(
-                data.overcrowded_spaces
+                peakOccupancy
+            )
+        );
+
+
+        setText(
+            "overcrowdingMetric",
+            integerValue(
+                overcrowding
             )
         );
 
@@ -2728,16 +3136,21 @@ async function loadCurrentOccupancy() {
             "occupancySpacesTable"
         );
 
+
     if (!container) {
         return;
     }
+
 
     try {
 
         const response =
             await getJSON(
-                "/api/occupancy/spaces"
+                buildURL(
+                    "/api/occupancy/current"
+                )
             );
+
 
         const rows =
             extractArray(
@@ -2745,11 +3158,13 @@ async function loadCurrentOccupancy() {
                 [
                     "spaces",
                     "occupancy",
-                    "records",
+                    "readings",
                     "data",
+                    "records",
                     "items"
                 ]
             );
+
 
         if (!rows.length) {
 
@@ -2763,6 +3178,7 @@ async function loadCurrentOccupancy() {
 
         }
 
+
         container.innerHTML = `
             <table class="data-table">
 
@@ -2770,7 +3186,6 @@ async function loadCurrentOccupancy() {
                     <tr>
                         <th>Space</th>
                         <th>Building</th>
-                        <th>Type</th>
                         <th>Occupancy</th>
                         <th>Capacity</th>
                         <th>Utilization</th>
@@ -2790,82 +3205,85 @@ async function loadCurrentOccupancy() {
                                             firstDefined(
                                                 row,
                                                 [
-                                                    "occupancy_status",
                                                     "utilization_status",
-                                                    "status"
+                                                    "status",
+                                                    "occupancy_status"
                                                 ],
                                                 "NORMAL"
                                             )
                                         );
 
-                                    const occupancy =
-                                        firstDefined(
-                                            row,
-                                            [
-                                                "occupancy",
-                                                "current_occupancy",
-                                                "occupancy_count",
-                                                "people_count"
-                                            ],
-                                            0
-                                        );
-
-                                    const capacity =
-                                        firstDefined(
-                                            row,
-                                            [
-                                                "capacity",
-                                                "max_capacity"
-                                            ],
-                                            0
-                                        );
-
-                                    const utilization =
-                                        firstDefined(
-                                            row,
-                                            [
-                                                "utilization_percent",
-                                                "occupancy_percent",
-                                                "utilization"
-                                            ],
-                                            0
-                                        );
 
                                     return `
                                         <tr>
 
                                             <td>
                                                 <span class="asset-name">
-                                                    ${escapeHTML(firstDefined(row, ["space_name", "room_name", "name"], "Space"))}
-                                                </span>
-
-                                                <span class="sub-text">
-                                                    ${escapeHTML(firstDefined(row, ["space_id", "room_id", "id"], "--"))}
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
-
-                                                <span class="sub-text">
-                                                    ${escapeHTML(firstDefined(row, ["block_name", "block"], ""))}
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "space_name",
+                                                                "space_id",
+                                                                "name"
+                                                            ],
+                                                            "--"
+                                                        )
+                                                    )}
                                                 </span>
                                             </td>
 
                                             <td>
-                                                ${escapeHTML(firstDefined(row, ["space_type", "room_type", "type"], "--"))}
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "building_name",
+                                                            "building"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
-                                                ${integerValue(occupancy)}
+                                                ${integerValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "occupancy",
+                                                            "current_occupancy",
+                                                            "occupancy_count"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
-                                                ${integerValue(capacity)}
+                                                ${integerValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "capacity",
+                                                            "max_capacity"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
-                                                ${percentValue(utilization)}
+                                                ${percentValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "utilization_percent",
+                                                            "utilization"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
@@ -2889,6 +3307,12 @@ async function loadCurrentOccupancy() {
 
     } catch (error) {
 
+        console.error(
+            "Current occupancy failed:",
+            error
+        );
+
+
         showError(
             "occupancySpacesTable",
             "Unable to load current occupancy."
@@ -2897,8 +3321,6 @@ async function loadCurrentOccupancy() {
     }
 
 }
-
-
 /* ============================================================
    OCCUPANCY HOURLY PATTERN
    ============================================================ */
@@ -2989,16 +3411,17 @@ async function loadOccupancyHourlyPattern() {
                     mode: "lines+markers",
 
                     line: {
-                        color:
-                            COLORS.teal,
+                        color: COLORS.teal,
                         width: 2
                     },
 
                     marker: {
-                        color:
-                            COLORS.teal,
+                        color: COLORS.teal,
                         size: 6
-                    }
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Utilization: %{y:.1f}%<extra></extra>"
                 }
             ],
             layout,
@@ -3104,9 +3527,11 @@ async function loadOccupancyBuildings() {
                     type: "bar",
 
                     marker: {
-                        color:
-                            COLORS.teal
-                    }
+                        color: COLORS.teal
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Utilization: %{y:.1f}%<extra></extra>"
                 }
             ],
             layout,
@@ -3168,9 +3593,8 @@ async function loadSpaceUtilization() {
                         row,
                         [
                             "space_name",
-                            "room_name",
-                            "name",
-                            "space_id"
+                            "space_id",
+                            "name"
                         ],
                         "Space"
                     )
@@ -3196,7 +3620,7 @@ async function loadSpaceUtilization() {
         const layout =
             commonLayout();
 
-        layout.height = 350;
+        layout.height = 390;
         layout.showlegend = false;
 
         layout.yaxis = {
@@ -3213,9 +3637,11 @@ async function loadSpaceUtilization() {
                     type: "bar",
 
                     marker: {
-                        color:
-                            COLORS.hvac
-                    }
+                        color: COLORS.teal
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Utilization: %{y:.1f}%<extra></extra>"
                 }
             ],
             layout,
@@ -3284,7 +3710,7 @@ async function loadPeakHours() {
                     )
             );
 
-        const values =
+        const utilization =
             rows.map(
                 row =>
                     Number(
@@ -3317,13 +3743,15 @@ async function loadPeakHours() {
             [
                 {
                     x: hours,
-                    y: values,
+                    y: utilization,
                     type: "bar",
 
                     marker: {
-                        color:
-                            COLORS.teal
-                    }
+                        color: COLORS.hvac
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Utilization: %{y:.1f}%<extra></extra>"
                 }
             ],
             layout,
@@ -3333,7 +3761,7 @@ async function loadPeakHours() {
     } catch (error) {
 
         console.error(
-            "Peak occupancy hours failed:",
+            "Peak hours failed:",
             error
         );
 
@@ -3380,14 +3808,12 @@ async function loadOccupancyHeatmap() {
 
         if (!rows.length) {
 
-            Plotly.purge(
-                element
-            );
-
+            Plotly.purge(element);
             return;
+
         }
 
-        const spaces =
+        const spaceNames =
             [
                 ...new Set(
                     rows.map(
@@ -3397,7 +3823,7 @@ async function loadOccupancyHeatmap() {
                                 [
                                     "space_name",
                                     "space_id",
-                                    "room_name"
+                                    "space"
                                 ],
                                 "Space"
                             )
@@ -3414,7 +3840,8 @@ async function loadOccupancyHeatmap() {
                                 row,
                                 [
                                     "hour",
-                                    "hour_label"
+                                    "hour_label",
+                                    "time"
                                 ],
                                 ""
                             )
@@ -3422,9 +3849,9 @@ async function loadOccupancyHeatmap() {
                 )
             ];
 
-        const z =
-            spaces.map(
-                space =>
+        const matrix =
+            spaceNames.map(
+                spaceName =>
                     hours.map(
                         hour => {
 
@@ -3437,21 +3864,24 @@ async function loadOccupancyHeatmap() {
                                                 [
                                                     "space_name",
                                                     "space_id",
-                                                    "room_name"
+                                                    "space"
                                                 ],
-                                                "Space"
+                                                ""
                                             )
-                                        ) === String(space) &&
+                                        ) ===
+                                            String(spaceName) &&
                                         String(
                                             firstDefined(
                                                 row,
                                                 [
                                                     "hour",
-                                                    "hour_label"
+                                                    "hour_label",
+                                                    "time"
                                                 ],
                                                 ""
                                             )
-                                        ) === String(hour)
+                                        ) ===
+                                            String(hour)
                                 );
 
                             return match
@@ -3476,7 +3906,7 @@ async function loadOccupancyHeatmap() {
         const layout =
             commonLayout();
 
-        layout.height = 420;
+        layout.height = 430;
 
         layout.xaxis = {
             ...layout.xaxis,
@@ -3493,8 +3923,8 @@ async function loadOccupancyHeatmap() {
             [
                 {
                     x: hours,
-                    y: spaces,
-                    z: z,
+                    y: spaceNames,
+                    z: matrix,
                     type: "heatmap",
 
                     colorscale: [
@@ -3504,7 +3934,7 @@ async function loadOccupancyHeatmap() {
                     ],
 
                     hovertemplate:
-                        "%{y}<br>Hour: %{x}<br>Utilization: %{z:.1f}%<extra></extra>"
+                        "Space: %{y}<br>Hour: %{x}<br>Utilization: %{z:.1f}%<extra></extra>"
                 }
             ],
             layout,
@@ -3549,10 +3979,11 @@ async function loadUnderusedSpaces() {
             extractArray(
                 response,
                 [
-                    "spaces",
                     "underused_spaces",
+                    "spaces",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
@@ -3561,7 +3992,7 @@ async function loadUnderusedSpaces() {
             showEmpty(
                 "underusedSpaces",
                 "No Underused Spaces",
-                "No spaces are currently classified as underused."
+                "No significant underused spaces are currently identified."
             );
 
             return;
@@ -3572,34 +4003,77 @@ async function loadUnderusedSpaces() {
             rows
                 .slice(0, 20)
                 .map(
-                    row => `
-                        <article class="issue-card">
+                    row => {
 
-                            <div class="card-topline">
+                        const status =
+                            normalizeStatus(
+                                firstDefined(
+                                    row,
+                                    [
+                                        "utilization_status",
+                                        "status"
+                                    ],
+                                    "UNDERUSED"
+                                )
+                            );
 
-                                <h3 class="card-title">
-                                    ${escapeHTML(firstDefined(row, ["space_name", "room_name", "name"], "Space"))}
-                                </h3>
+                        return `
+                            <article class="issue-card">
 
-                                <span class="priority-badge priority-low">
-                                    UNDERUSED
-                                </span>
+                                <div class="card-topline">
 
-                            </div>
+                                    <h3 class="card-title">
+                                        ${escapeHTML(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "space_name",
+                                                    "space_id",
+                                                    "name"
+                                                ],
+                                                "Facility Space"
+                                            )
+                                        )}
+                                    </h3>
 
-                            <div class="card-meta">
-                                ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
-                                · Capacity:
-                                ${integerValue(firstDefined(row, ["capacity", "max_capacity"], 0))}
-                            </div>
+                                    <span class="status-badge ${statusClass(status)}">
+                                        ${escapeHTML(status)}
+                                    </span>
 
-                            <p class="card-message">
-                                Average utilization:
-                                ${percentValue(firstDefined(row, ["average_utilization_percent", "utilization_percent", "utilization"], 0))}
-                            </p>
+                                </div>
 
-                        </article>
-                    `
+                                <div class="card-meta">
+                                    ${escapeHTML(
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "building_name",
+                                                "building"
+                                            ],
+                                            ""
+                                        )
+                                    )}
+                                </div>
+
+                                <p class="card-message">
+                                    Average utilization:
+                                    ${percentValue(
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "average_utilization_percent",
+                                                "utilization_percent",
+                                                "utilization"
+                                            ],
+                                            0
+                                        )
+                                    )}
+                                </p>
+
+                            </article>
+                        `;
+
+                    }
                 )
                 .join("");
 
@@ -3634,17 +4108,18 @@ async function loadOvercrowdingEvents() {
 
         const response =
             await getJSON(
-                "/api/occupancy/overcrowding?limit=20"
+                "/api/occupancy/overcrowding"
             );
 
         const rows =
             extractArray(
                 response,
                 [
-                    "events",
                     "overcrowding_events",
+                    "events",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
@@ -3652,8 +4127,8 @@ async function loadOvercrowdingEvents() {
 
             showEmpty(
                 "overcrowdingEvents",
-                "No Recent Overcrowding",
-                "No recent overcrowding events are available."
+                "No Overcrowding Events",
+                "No overcrowding events are currently available."
             );
 
             return;
@@ -3664,36 +4139,124 @@ async function loadOvercrowdingEvents() {
             rows
                 .slice(0, 20)
                 .map(
-                    row => `
-                        <article class="issue-card">
+                    row => {
 
-                            <div class="card-topline">
+                        const severity =
+                            normalizeStatus(
+                                firstDefined(
+                                    row,
+                                    [
+                                        "severity",
+                                        "priority"
+                                    ],
+                                    "HIGH"
+                                )
+                            );
 
-                                <h3 class="card-title">
-                                    ${escapeHTML(firstDefined(row, ["space_name", "room_name", "name"], "Overcrowding Event"))}
-                                </h3>
+                        return `
+                            <article class="issue-card">
 
-                                <span class="priority-badge priority-high">
-                                    OVERCROWDED
-                                </span>
+                                <div class="card-topline">
 
-                            </div>
+                                    <h3 class="card-title">
+                                        ${escapeHTML(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "space_name",
+                                                    "space_id"
+                                                ],
+                                                "Overcrowding Event"
+                                            )
+                                        )}
+                                    </h3>
 
-                            <div class="card-meta">
-                                ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
-                                ·
-                                ${escapeHTML(timestampValue(firstDefined(row, ["timestamp", "detected_at"], "")))}
-                            </div>
+                                    <span class="priority-badge ${priorityClass(severity)}">
+                                        ${escapeHTML(severity)}
+                                    </span>
 
-                            <p class="card-message">
-                                Occupancy:
-                                ${integerValue(firstDefined(row, ["occupancy", "occupancy_count", "current_occupancy"], 0))}
-                                · Capacity:
-                                ${integerValue(firstDefined(row, ["capacity", "max_capacity"], 0))}
-                            </p>
+                                </div>
 
-                        </article>
-                    `
+                                <div class="card-meta">
+
+                                    ${escapeHTML(
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "building_name",
+                                                "building"
+                                            ],
+                                            ""
+                                        )
+                                    )}
+
+                                    ${
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "timestamp",
+                                                "detected_at"
+                                            ],
+                                            ""
+                                        )
+                                            ? " · " +
+                                              escapeHTML(
+                                                  timestampValue(
+                                                      firstDefined(
+                                                          row,
+                                                          [
+                                                              "timestamp",
+                                                              "detected_at"
+                                                          ],
+                                                          ""
+                                                      )
+                                                  )
+                                              )
+                                            : ""
+                                    }
+
+                                </div>
+
+                                <p class="card-message">
+                                    Occupancy:
+                                    ${integerValue(
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "occupancy",
+                                                "occupancy_count"
+                                            ],
+                                            0
+                                        )
+                                    )}
+                                    /
+                                    ${integerValue(
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "capacity",
+                                                "max_capacity"
+                                            ],
+                                            0
+                                        )
+                                    )}
+                                    · Utilization:
+                                    ${percentValue(
+                                        firstDefined(
+                                            row,
+                                            [
+                                                "utilization_percent",
+                                                "utilization"
+                                            ],
+                                            0
+                                        )
+                                    )}
+                                </p>
+
+                            </article>
+                        `;
+
+                    }
                 )
                 .join("");
 
@@ -3731,7 +4294,7 @@ async function loadOccupancyInsights() {
                 "/api/occupancy/insights"
             );
 
-        const insights =
+        let insights =
             extractArray(
                 response,
                 [
@@ -3742,12 +4305,26 @@ async function loadOccupancyInsights() {
                 ]
             );
 
+        if (
+            !insights.length &&
+            typeof response === "object"
+        ) {
+
+            insights =
+                Object.values(response)
+                    .filter(
+                        value =>
+                            typeof value === "string"
+                    );
+
+        }
+
         if (!insights.length) {
 
             showEmpty(
                 "occupancyInsights",
                 "No Occupancy Insights",
-                "No occupancy recommendations are currently available."
+                "No additional occupancy recommendations are currently available."
             );
 
             return;
@@ -3756,11 +4333,10 @@ async function loadOccupancyInsights() {
 
         container.innerHTML =
             insights
-                .slice(0, 20)
                 .map(
                     insight => {
 
-                        const text =
+                        const message =
                             typeof insight === "string"
                                 ? insight
                                 : firstDefined(
@@ -3769,23 +4345,34 @@ async function loadOccupancyInsights() {
                                         "message",
                                         "insight",
                                         "recommendation",
-                                        "description",
-                                        "title"
+                                        "description"
                                     ],
                                     "Occupancy insight"
                                 );
 
+                        const title =
+                            typeof insight === "string"
+                                ? "Occupancy Insight"
+                                : firstDefined(
+                                    insight,
+                                    [
+                                        "title",
+                                        "type"
+                                    ],
+                                    "Occupancy Insight"
+                                );
+
                         return `
-                            <article class="recommendation-card">
-                                <div class="card-topline">
-                                    <h3 class="card-title">
-                                        Occupancy Insight
-                                    </h3>
-                                </div>
+                            <article class="issue-card">
+
+                                <h3 class="card-title">
+                                    ${escapeHTML(title)}
+                                </h3>
 
                                 <p class="card-message">
-                                    ${escapeHTML(text)}
+                                    ${escapeHTML(message)}
                                 </p>
+
                             </article>
                         `;
 
@@ -3815,7 +4402,7 @@ async function loadOccupancyAlerts() {
 
         const response =
             await getJSON(
-                "/api/occupancy/alerts?limit=30"
+                "/api/occupancy/alerts"
             );
 
         const alerts =
@@ -3856,57 +4443,114 @@ async function loadSecuritySummary() {
 
     try {
 
-        const data =
+        const response =
             await getJSON(
                 "/api/security/summary"
             );
 
+        const summary =
+            response.summary &&
+            typeof response.summary === "object"
+                ? response.summary
+                : response;
+
         setText(
             "securityEventsMetric",
             integerValue(
-                data.total_events
+                firstDefined(
+                    summary,
+                    [
+                        "total_events",
+                        "events",
+                        "event_count"
+                    ],
+                    0
+                )
             )
         );
 
         setText(
             "securityGrantedMetric",
             integerValue(
-                data.granted_access
+                firstDefined(
+                    summary,
+                    [
+                        "granted_events",
+                        "granted",
+                        "access_granted"
+                    ],
+                    0
+                )
             )
         );
 
         setText(
             "securityDeniedMetric",
             integerValue(
-                data.denied_access
+                firstDefined(
+                    summary,
+                    [
+                        "denied_events",
+                        "denied",
+                        "access_denied"
+                    ],
+                    0
+                )
             )
         );
+
+        const unauthorized =
+            firstDefined(
+                summary,
+                [
+                    "unauthorized_access_attempts",
+                    "unauthorized_attempts",
+                    "unauthorized"
+                ],
+                0
+            );
 
         setText(
             "securityUnauthorizedMetric",
             integerValue(
-                data.unauthorized_attempts
+                unauthorized
             )
         );
 
         setText(
-            "unauthorizedOverviewMetric",
+            "unauthorizedMetric",
             integerValue(
-                data.unauthorized_attempts
-            )
-        );
-
-        setText(
-            "securityAfterHoursMetric",
-            integerValue(
-                data.after_hours_events
+                unauthorized
             )
         );
 
         setText(
             "securityAlertsMetric",
             integerValue(
-                data.security_alerts
+                firstDefined(
+                    summary,
+                    [
+                        "security_alerts",
+                        "alerts",
+                        "alert_count"
+                    ],
+                    0
+                )
+            )
+        );
+
+        setText(
+            "securityCriticalMetric",
+            integerValue(
+                firstDefined(
+                    summary,
+                    [
+                        "critical_events",
+                        "critical",
+                        "critical_count"
+                    ],
+                    0
+                )
             )
         );
 
@@ -3942,7 +4586,8 @@ async function loadSecurityAccessPoints() {
                     "access_points",
                     "points",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
@@ -3965,24 +4610,39 @@ async function loadSecurityAccessPoints() {
                         row,
                         [
                             "access_point_name",
-                            "access_point_id",
+                            "access_point",
                             "name"
                         ],
                         "Access Point"
                     )
             );
 
-        const values =
+        const granted =
             rows.map(
                 row =>
                     Number(
                         firstDefined(
                             row,
                             [
-                                "total_events",
-                                "event_count",
-                                "events",
-                                "access_count"
+                                "granted_count",
+                                "granted",
+                                "access_granted"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+        const denied =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "denied_count",
+                                "denied",
+                                "access_denied"
                             ],
                             0
                         )
@@ -3992,12 +4652,14 @@ async function loadSecurityAccessPoints() {
         const layout =
             commonLayout();
 
-        layout.height = 350;
-        layout.showlegend = false;
+        layout.height = 370;
+
+        layout.barmode =
+            "group";
 
         layout.yaxis = {
             ...layout.yaxis,
-            title: "Events"
+            title: "Access Events"
         };
 
         Plotly.react(
@@ -4005,12 +4667,23 @@ async function loadSecurityAccessPoints() {
             [
                 {
                     x: names,
-                    y: values,
+                    y: granted,
                     type: "bar",
+                    name: "Granted",
 
                     marker: {
-                        color:
-                            COLORS.teal
+                        color: COLORS.teal
+                    }
+                },
+
+                {
+                    x: names,
+                    y: denied,
+                    type: "bar",
+                    name: "Denied",
+
+                    marker: {
+                        color: COLORS.danger
                     }
                 }
             ],
@@ -4048,8 +4721,8 @@ async function loadSecurityHourlyPattern() {
                 response,
                 [
                     "hourly_pattern",
-                    "hours",
                     "pattern",
+                    "hours",
                     "data",
                     "records"
                 ]
@@ -4088,10 +4761,9 @@ async function loadSecurityHourlyPattern() {
                         firstDefined(
                             row,
                             [
-                                "total_events",
                                 "event_count",
                                 "events",
-                                "count"
+                                "total_events"
                             ],
                             0
                         )
@@ -4119,16 +4791,17 @@ async function loadSecurityHourlyPattern() {
                     mode: "lines+markers",
 
                     line: {
-                        color:
-                            COLORS.teal,
+                        color: COLORS.teal,
                         width: 2
                     },
 
                     marker: {
-                        color:
-                            COLORS.teal,
+                        color: COLORS.teal,
                         size: 6
-                    }
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Events: %{y}<extra></extra>"
                 }
             ],
             layout,
@@ -4145,8 +4818,6 @@ async function loadSecurityHourlyPattern() {
     }
 
 }
-
-
 /* ============================================================
    SECURITY EVENTS
    ============================================================ */
@@ -4166,7 +4837,7 @@ async function loadSecurityEvents() {
 
         const response =
             await getJSON(
-                "/api/security/events?limit=30"
+                "/api/security/events?limit=50"
             );
 
         const rows =
@@ -4176,7 +4847,8 @@ async function loadSecurityEvents() {
                     "events",
                     "security_events",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
@@ -4185,7 +4857,7 @@ async function loadSecurityEvents() {
             showEmpty(
                 "securityEventsTable",
                 "No Security Events",
-                "No recent security events are available."
+                "No recent security events are currently available."
             );
 
             return;
@@ -4197,12 +4869,12 @@ async function loadSecurityEvents() {
 
                 <thead>
                     <tr>
-                        <th>Event</th>
+                        <th>Time</th>
                         <th>Access Point</th>
                         <th>Person</th>
                         <th>Access</th>
+                        <th>Event</th>
                         <th>Severity</th>
-                        <th>Time</th>
                     </tr>
                 </thead>
 
@@ -4210,8 +4882,22 @@ async function loadSecurityEvents() {
 
                     ${
                         rows
+                            .slice(0, 50)
                             .map(
                                 row => {
+
+                                    const accessStatus =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "access_status",
+                                                    "access_result",
+                                                    "status"
+                                                ],
+                                                "UNKNOWN"
+                                            )
+                                        );
 
                                     const severity =
                                         normalizeStatus(
@@ -4219,23 +4905,10 @@ async function loadSecurityEvents() {
                                                 row,
                                                 [
                                                     "severity",
-                                                    "risk_level"
+                                                    "risk_level",
+                                                    "priority"
                                                 ],
                                                 "NORMAL"
-                                            )
-                                        );
-
-                                    const access =
-                                        normalizeStatus(
-                                            firstDefined(
-                                                row,
-                                                [
-                                                    "access_status",
-                                                    "access_result",
-                                                    "result",
-                                                    "status"
-                                                ],
-                                                "--"
                                             )
                                         );
 
@@ -4243,41 +4916,77 @@ async function loadSecurityEvents() {
                                         <tr>
 
                                             <td>
+                                                ${escapeHTML(
+                                                    timestampValue(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "timestamp",
+                                                                "event_timestamp",
+                                                                "created_at"
+                                                            ],
+                                                            ""
+                                                        )
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
                                                 <span class="asset-name">
-                                                    ${escapeHTML(firstDefined(row, ["event_type", "event_name", "type"], "Access Event"))}
-                                                </span>
-
-                                                <span class="sub-text">
-                                                    ${escapeHTML(firstDefined(row, ["event_id", "id"], "--"))}
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                ${escapeHTML(firstDefined(row, ["access_point_name", "access_point_id"], "--"))}
-
-                                                <span class="sub-text">
-                                                    ${escapeHTML(firstDefined(row, ["building_name", "building"], ""))}
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "access_point_name",
+                                                                "access_point",
+                                                                "location"
+                                                            ],
+                                                            "--"
+                                                        )
+                                                    )}
                                                 </span>
                                             </td>
 
                                             <td>
-                                                ${escapeHTML(firstDefined(row, ["person_name", "person_id", "visitor_id", "user_id"], "--"))}
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "person_name",
+                                                            "employee_name",
+                                                            "visitor_name",
+                                                            "person_id",
+                                                            "employee_id"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
-                                                <span class="status-badge ${statusClass(access)}">
-                                                    ${escapeHTML(access)}
+                                                <span class="status-badge ${statusClass(accessStatus)}">
+                                                    ${escapeHTML(accessStatus)}
                                                 </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "event_type",
+                                                            "security_event_type",
+                                                            "type"
+                                                        ],
+                                                        "ACCESS EVENT"
+                                                    )
+                                                )}
                                             </td>
 
                                             <td>
                                                 <span class="priority-badge ${priorityClass(severity)}">
                                                     ${escapeHTML(severity)}
                                                 </span>
-                                            </td>
-
-                                            <td>
-                                                ${escapeHTML(timestampValue(firstDefined(row, ["timestamp", "event_timestamp", "created_at"], "")))}
                                             </td>
 
                                         </tr>
@@ -4295,6 +5004,11 @@ async function loadSecurityEvents() {
 
     } catch (error) {
 
+        console.error(
+            "Security events failed:",
+            error
+        );
+
         showError(
             "securityEventsTable",
             "Unable to load security events."
@@ -4306,7 +5020,7 @@ async function loadSecurityEvents() {
 
 
 /* ============================================================
-   UNAUTHORIZED EVENTS
+   UNAUTHORIZED ACCESS
    ============================================================ */
 
 async function loadUnauthorizedEvents() {
@@ -4324,17 +5038,19 @@ async function loadUnauthorizedEvents() {
 
         const response =
             await getJSON(
-                "/api/security/unauthorized?limit=20"
+                "/api/security/unauthorized?limit=30"
             );
 
         const rows =
             extractArray(
                 response,
                 [
-                    "events",
                     "unauthorized_events",
+                    "events",
+                    "attempts",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
@@ -4343,7 +5059,7 @@ async function loadUnauthorizedEvents() {
             showEmpty(
                 "unauthorizedEvents",
                 "No Unauthorized Attempts",
-                "No recent unauthorized access attempts are available."
+                "No unauthorized access attempts are currently stored."
             );
 
             return;
@@ -4352,7 +5068,7 @@ async function loadUnauthorizedEvents() {
 
         container.innerHTML =
             rows
-                .slice(0, 20)
+                .slice(0, 30)
                 .map(
                     row => {
 
@@ -4362,10 +5078,47 @@ async function loadUnauthorizedEvents() {
                                     row,
                                     [
                                         "severity",
-                                        "risk_level"
+                                        "risk_level",
+                                        "priority"
                                     ],
                                     "HIGH"
                                 )
+                            );
+
+                        const accessPoint =
+                            firstDefined(
+                                row,
+                                [
+                                    "access_point_name",
+                                    "access_point",
+                                    "location"
+                                ],
+                                "Access Point"
+                            );
+
+                        const person =
+                            firstDefined(
+                                row,
+                                [
+                                    "person_name",
+                                    "employee_name",
+                                    "visitor_name",
+                                    "person_id",
+                                    "employee_id",
+                                    "credential_id"
+                                ],
+                                "Unknown person"
+                            );
+
+                        const timestamp =
+                            firstDefined(
+                                row,
+                                [
+                                    "timestamp",
+                                    "event_timestamp",
+                                    "created_at"
+                                ],
+                                ""
                             );
 
                         return `
@@ -4374,7 +5127,7 @@ async function loadUnauthorizedEvents() {
                                 <div class="card-topline">
 
                                     <h3 class="card-title">
-                                        ${escapeHTML(firstDefined(row, ["event_type", "event_name"], "Unauthorized Access"))}
+                                        Unauthorized Access Attempt
                                     </h3>
 
                                     <span class="priority-badge ${priorityClass(severity)}">
@@ -4384,13 +5137,22 @@ async function loadUnauthorizedEvents() {
                                 </div>
 
                                 <div class="card-meta">
-                                    ${escapeHTML(firstDefined(row, ["access_point_name", "access_point_id"], "--"))}
-                                    ·
-                                    ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
+                                    ${escapeHTML(accessPoint)}
+                                    ${
+                                        timestamp
+                                            ? " · " +
+                                              escapeHTML(
+                                                  timestampValue(
+                                                      timestamp
+                                                  )
+                                              )
+                                            : ""
+                                    }
                                 </div>
 
                                 <p class="card-message">
-                                    ${escapeHTML(timestampValue(firstDefined(row, ["timestamp", "event_timestamp"], "")))}
+                                    Access was denied for
+                                    ${escapeHTML(person)}.
                                 </p>
 
                             </article>
@@ -4404,7 +5166,7 @@ async function loadUnauthorizedEvents() {
 
         showError(
             "unauthorizedEvents",
-            "Unable to load unauthorized access events."
+            "Unable to load unauthorized access attempts."
         );
 
     }
@@ -4442,7 +5204,8 @@ async function loadVisitorMovement() {
                     "visitor_movement",
                     "movements",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
@@ -4458,39 +5221,135 @@ async function loadVisitorMovement() {
 
         }
 
-        container.innerHTML =
-            rows
-                .slice(0, 20)
-                .map(
-                    row => `
-                        <article class="recommendation-card">
+        container.innerHTML = `
+            <table class="data-table">
 
-                            <div class="card-topline">
+                <thead>
+                    <tr>
+                        <th>Visitor</th>
+                        <th>Access Point</th>
+                        <th>Building</th>
+                        <th>Event</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
 
-                                <h3 class="card-title">
-                                    ${escapeHTML(firstDefined(row, ["visitor_name", "visitor_id", "person_name"], "Visitor"))}
-                                </h3>
+                <tbody>
 
-                                <span class="priority-badge priority-low">
-                                    VISITOR
-                                </span>
+                    ${
+                        rows
+                            .slice(0, 30)
+                            .map(
+                                row => {
 
-                            </div>
+                                    const status =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "access_status",
+                                                    "status",
+                                                    "access_result"
+                                                ],
+                                                "NORMAL"
+                                            )
+                                        );
 
-                            <div class="card-meta">
-                                ${escapeHTML(firstDefined(row, ["access_point_name", "access_point_id", "location"], "--"))}
-                                ·
-                                ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
-                            </div>
+                                    return `
+                                        <tr>
 
-                            <p class="card-message">
-                                ${escapeHTML(timestampValue(firstDefined(row, ["timestamp", "event_timestamp", "last_seen"], "")))}
-                            </p>
+                                            <td>
+                                                <span class="asset-name">
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "visitor_name",
+                                                                "person_name",
+                                                                "visitor_id",
+                                                                "person_id"
+                                                            ],
+                                                            "Visitor"
+                                                        )
+                                                    )}
+                                                </span>
+                                            </td>
 
-                        </article>
-                    `
-                )
-                .join("");
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "access_point_name",
+                                                            "access_point",
+                                                            "location"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "building_name",
+                                                            "building"
+                                                        ],
+                                                        "--"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "event_type",
+                                                            "movement_type",
+                                                            "type"
+                                                        ],
+                                                        "ACCESS"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    timestampValue(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "timestamp",
+                                                                "event_timestamp"
+                                                            ],
+                                                            ""
+                                                        )
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span class="status-badge ${statusClass(status)}">
+                                                    ${escapeHTML(status)}
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    `;
+
+                                }
+                            )
+                            .join("")
+                    }
+
+                </tbody>
+
+            </table>
+        `;
 
     } catch (error) {
 
@@ -4526,7 +5385,7 @@ async function loadSecurityInsights() {
                 "/api/security/insights"
             );
 
-        const insights =
+        let insights =
             extractArray(
                 response,
                 [
@@ -4537,12 +5396,27 @@ async function loadSecurityInsights() {
                 ]
             );
 
+        if (
+            !insights.length &&
+            response &&
+            typeof response === "object"
+        ) {
+
+            insights =
+                Object.values(response)
+                    .filter(
+                        value =>
+                            typeof value === "string"
+                    );
+
+        }
+
         if (!insights.length) {
 
             showEmpty(
                 "securityInsights",
                 "No Security Insights",
-                "No security recommendations are currently available."
+                "No additional security recommendations are currently available."
             );
 
             return;
@@ -4551,11 +5425,23 @@ async function loadSecurityInsights() {
 
         container.innerHTML =
             insights
-                .slice(0, 20)
                 .map(
                     insight => {
 
-                        const text =
+                        const title =
+                            typeof insight === "string"
+                                ? "Security Insight"
+                                : firstDefined(
+                                    insight,
+                                    [
+                                        "title",
+                                        "type",
+                                        "alert_type"
+                                    ],
+                                    "Security Insight"
+                                );
+
+                        const message =
                             typeof insight === "string"
                                 ? insight
                                 : firstDefined(
@@ -4564,25 +5450,20 @@ async function loadSecurityInsights() {
                                         "message",
                                         "insight",
                                         "recommendation",
-                                        "description",
-                                        "title"
+                                        "description"
                                     ],
-                                    "Security insight"
+                                    "Review the latest security activity."
                                 );
 
                         return `
-                            <article class="recommendation-card">
+                            <article class="issue-card">
 
-                                <div class="card-topline">
-
-                                    <h3 class="card-title">
-                                        Security Insight
-                                    </h3>
-
-                                </div>
+                                <h3 class="card-title">
+                                    ${escapeHTML(title)}
+                                </h3>
 
                                 <p class="card-message">
-                                    ${escapeHTML(text)}
+                                    ${escapeHTML(message)}
                                 </p>
 
                             </article>
@@ -4623,89 +5504,33 @@ async function loadSecurityIssueCentre() {
 
         const response =
             await getJSON(
-                "/api/security/alert-events?limit=30"
+                "/api/security/alerts"
             );
 
-        const rows =
+        const alerts =
             extractArray(
                 response,
                 [
-                    "events",
                     "alerts",
                     "security_alerts",
                     "data",
-                    "records"
+                    "records",
+                    "items"
                 ]
             );
 
-        if (!rows.length) {
-
-            showEmpty(
-                "securityIssueCentre",
-                "No Security Issues",
-                "No recent security issues are available."
-            );
-
-            return;
-
-        }
-
-        container.innerHTML =
-            rows
-                .slice(0, 30)
-                .map(
-                    row => {
-
-                        const severity =
-                            normalizeStatus(
-                                firstDefined(
-                                    row,
-                                    [
-                                        "severity",
-                                        "priority",
-                                        "risk_level"
-                                    ],
-                                    "MEDIUM"
-                                )
-                            );
-
-                        return `
-                            <article class="issue-card">
-
-                                <div class="card-topline">
-
-                                    <h3 class="card-title">
-                                        ${escapeHTML(firstDefined(row, ["event_type", "title", "event_name"], "Security Event"))}
-                                    </h3>
-
-                                    <span class="priority-badge ${priorityClass(severity)}">
-                                        ${escapeHTML(severity)}
-                                    </span>
-
-                                </div>
-
-                                <div class="card-meta">
-                                    ${escapeHTML(firstDefined(row, ["access_point_name", "access_point_id"], "--"))}
-                                    ·
-                                    ${escapeHTML(firstDefined(row, ["building_name", "building"], "--"))}
-                                </div>
-
-                                <p class="card-message">
-                                    ${escapeHTML(firstDefined(row, ["message", "description"], "Security event requires review."))}
-                                </p>
-
-                            </article>
-                        `;
-
-                    }
-                )
-                .join("");
+        renderAlertCards(
+            "securityIssueCentre",
+            alerts,
+            "No Security Issues",
+            "No active security issues are currently stored."
+        );
 
     } catch (error) {
 
         showError(
             "securityIssueCentre",
-            "Unable to load security issues."
+            "Unable to load the security Issue Centre."
         );
 
     }
@@ -4721,53 +5546,28 @@ async function loadSecurityAlerts() {
 
     try {
 
-        let response =
+        const response =
             await getJSON(
-                "/api/security/alerts?limit=30"
+                "/api/security/alerts"
             );
 
-        let alerts =
+        const alerts =
             extractArray(
                 response,
                 [
                     "alerts",
+                    "security_alerts",
                     "data",
                     "records",
                     "items"
                 ]
             );
 
-        /*
-         Database alerts can initially be empty.
-         Fall back to security alert events so the dashboard
-         still presents detected security conditions.
-        */
-
-        if (!alerts.length) {
-
-            response =
-                await getJSON(
-                    "/api/security/alert-events?limit=30"
-                );
-
-            alerts =
-                extractArray(
-                    response,
-                    [
-                        "events",
-                        "alerts",
-                        "data",
-                        "records"
-                    ]
-                );
-
-        }
-
         renderAlertCards(
             "securityAlerts",
             alerts,
             "No Security Alerts",
-            "No active security alerts are currently available."
+            "No active security alerts are currently stored."
         );
 
     } catch (error) {
@@ -4783,130 +5583,1533 @@ async function loadSecurityAlerts() {
 
 
 /* ============================================================
-   GENERIC ALERT CARD RENDERER
+   COST OPTIMIZATION AGENT
    ============================================================ */
 
-function renderAlertCards(
-    elementId,
-    alerts,
-    emptyTitle,
-    emptyMessage
-) {
+async function runCostOptimizationAgent() {
+
+    try {
+
+        await postJSON(
+            costURL(
+                "/api/cost/agent/run"
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost Optimization Agent failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST SUMMARY
+   ============================================================ */
+
+async function loadCostSummary() {
+
+    try {
+
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/summary"
+                )
+            );
+
+        const summary =
+            response.summary &&
+            typeof response.summary === "object"
+                ? response.summary
+                : response;
+
+        const totalCost =
+            firstDefined(
+                summary,
+                [
+                    "total_cost",
+                    "actual_cost",
+                    "operational_cost",
+                    "cost_total"
+                ],
+                0
+            );
+
+        const expectedCost =
+            firstDefined(
+                summary,
+                [
+                    "expected_cost",
+                    "total_expected_cost",
+                    "expected_total"
+                ],
+                0
+            );
+
+        const variance =
+            firstDefined(
+                summary,
+                [
+                    "cost_variance",
+                    "total_cost_variance",
+                    "variance",
+                    "variance_amount"
+                ],
+                0
+            );
+
+        const savings =
+            firstDefined(
+                summary,
+                [
+                    "potential_savings",
+                    "total_potential_savings",
+                    "savings",
+                    "savings_potential"
+                ],
+                0
+            );
+
+        const inefficiencies =
+            firstDefined(
+                summary,
+                [
+                    "inefficiency_count",
+                    "cost_inefficiencies",
+                    "inefficiencies",
+                    "inefficient_records"
+                ],
+                0
+            );
+
+        setText(
+            "costTotalMetric",
+            currencyValue(
+                totalCost
+            )
+        );
+
+        setText(
+            "costExpectedMetric",
+            currencyValue(
+                expectedCost
+            )
+        );
+
+        setText(
+            "costVarianceMetric",
+            currencyValue(
+                variance
+            )
+        );
+
+        setText(
+            "costSavingsMetric",
+            currencyValue(
+                savings
+            )
+        );
+
+        setText(
+            "costInefficiencyMetric",
+            integerValue(
+                inefficiencies
+            )
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost summary failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST DATABASE STATUS
+   ============================================================ */
+
+async function loadCostDatabaseStatus() {
+
+    try {
+
+        const response =
+            await getJSON(
+                "/api/cost/database-status"
+            );
+
+        const status =
+            response.database &&
+            typeof response.database === "object"
+                ? response.database
+                : response;
+
+        const alertCount =
+            firstDefined(
+                status,
+                [
+                    "cost_optimization_alerts",
+                    "alert_count",
+                    "alerts"
+                ],
+                null
+            );
+
+        if (alertCount !== null) {
+
+            setText(
+                "costAlertsMetric",
+                integerValue(
+                    alertCount
+                )
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Cost database status failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST DAILY TREND
+   ============================================================ */
+
+async function loadCostDailyTrend() {
+
+    try {
+
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/daily-trend"
+                )
+            );
+
+        const rows =
+            extractArray(
+                response,
+                [
+                    "daily_trend",
+                    "trend",
+                    "daily_costs",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+        const element =
+            document.getElementById(
+                "costDailyTrendChart"
+            );
+
+        if (
+            !element ||
+            typeof Plotly === "undefined"
+        ) {
+            return;
+        }
+
+        if (!rows.length) {
+
+            Plotly.purge(element);
+            return;
+
+        }
+
+        const dates =
+            rows.map(
+                row =>
+                    firstDefined(
+                        row,
+                        [
+                            "date",
+                            "day",
+                            "timestamp"
+                        ],
+                        ""
+                    )
+            );
+
+        const actual =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "total_cost",
+                                "actual_cost",
+                                "cost"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+        const expected =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "expected_cost",
+                                "total_expected_cost"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+        const layout =
+            commonLayout();
+
+        layout.height = 370;
+
+        layout.yaxis = {
+            ...layout.yaxis,
+            title: "Cost (₹)"
+        };
+
+        Plotly.react(
+            element,
+            [
+                {
+                    x: dates,
+                    y: actual,
+                    type: "scatter",
+                    mode: "lines+markers",
+                    name: "Actual Cost",
+
+                    line: {
+                        color: COLORS.teal,
+                        width: 2
+                    },
+
+                    marker: {
+                        color: COLORS.teal,
+                        size: 5
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Actual: ₹%{y:,.2f}<extra></extra>"
+                },
+
+                {
+                    x: dates,
+                    y: expected,
+                    type: "scatter",
+                    mode: "lines",
+                    name: "Expected Cost",
+
+                    line: {
+                        color: COLORS.chartMuted,
+                        width: 2,
+                        dash: "dot"
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Expected: ₹%{y:,.2f}<extra></extra>"
+                }
+            ],
+            layout,
+            plotConfig
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost daily trend failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST BUILDING COMPARISON
+   ============================================================ */
+
+async function loadCostBuildingComparison() {
+
+    try {
+
+        const response =
+            await getJSON(
+                "/api/cost/buildings"
+            );
+
+        const rows =
+            extractArray(
+                response,
+                [
+                    "buildings",
+                    "comparison",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+        const element =
+            document.getElementById(
+                "costBuildingChart"
+            );
+
+        if (
+            !element ||
+            typeof Plotly === "undefined"
+        ) {
+            return;
+        }
+
+        if (!rows.length) {
+
+            Plotly.purge(element);
+            return;
+
+        }
+
+        const buildings =
+            rows.map(
+                row =>
+                    firstDefined(
+                        row,
+                        [
+                            "building_name",
+                            "building_id",
+                            "building",
+                            "name"
+                        ],
+                        "Building"
+                    )
+            );
+
+        const costs =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "total_cost",
+                                "actual_cost",
+                                "cost"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+        const savings =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "potential_savings",
+                                "savings",
+                                "savings_potential"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+        const layout =
+            commonLayout();
+
+        layout.height = 370;
+        layout.barmode = "group";
+
+        layout.yaxis = {
+            ...layout.yaxis,
+            title: "Cost (₹)"
+        };
+
+        Plotly.react(
+            element,
+            [
+                {
+                    x: buildings,
+                    y: costs,
+                    type: "bar",
+                    name: "Operational Cost",
+
+                    marker: {
+                        color: COLORS.chartMuted
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Cost: ₹%{y:,.2f}<extra></extra>"
+                },
+
+                {
+                    x: buildings,
+                    y: savings,
+                    type: "bar",
+                    name: "Potential Savings",
+
+                    marker: {
+                        color: COLORS.teal
+                    },
+
+                    hovertemplate:
+                        "%{x}<br>Savings: ₹%{y:,.2f}<extra></extra>"
+                }
+            ],
+            layout,
+            plotConfig
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost building comparison failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST BREAKDOWN
+   ============================================================ */
+
+async function loadCostBreakdown() {
+
+    try {
+
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/breakdown"
+                )
+            );
+
+        const element =
+            document.getElementById(
+                "costBreakdownChart"
+            );
+
+        if (
+            !element ||
+            typeof Plotly === "undefined"
+        ) {
+            return;
+        }
+
+        let rows =
+            extractArray(
+                response,
+                [
+                    "breakdown",
+                    "cost_breakdown",
+                    "categories",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+        let labels = [];
+        let values = [];
+
+        if (rows.length) {
+
+            labels =
+                rows.map(
+                    row =>
+                        firstDefined(
+                            row,
+                            [
+                                "category",
+                                "cost_type",
+                                "type",
+                                "name"
+                            ],
+                            "Cost"
+                        )
+                );
+
+            values =
+                rows.map(
+                    row =>
+                        Number(
+                            firstDefined(
+                                row,
+                                [
+                                    "cost",
+                                    "amount",
+                                    "total_cost",
+                                    "value"
+                                ],
+                                0
+                            )
+                        )
+                );
+
+        } else {
+
+            const breakdown =
+                response.breakdown &&
+                typeof response.breakdown === "object"
+                    ? response.breakdown
+                    : response;
+
+            const candidates = [
+                [
+                    "Electricity",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "electricity_cost",
+                            "total_electricity_cost"
+                        ],
+                        null
+                    )
+                ],
+                [
+                    "HVAC",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "hvac_cost",
+                            "total_hvac_cost"
+                        ],
+                        null
+                    )
+                ],
+                [
+                    "Lighting",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "lighting_cost",
+                            "total_lighting_cost"
+                        ],
+                        null
+                    )
+                ],
+                [
+                    "Water",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "water_cost",
+                            "total_water_cost"
+                        ],
+                        null
+                    )
+                ],
+                [
+                    "Maintenance",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "maintenance_cost",
+                            "total_maintenance_cost"
+                        ],
+                        null
+                    )
+                ],
+                [
+                    "Security",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "security_cost",
+                            "total_security_cost"
+                        ],
+                        null
+                    )
+                ],
+                [
+                    "Operations",
+                    firstDefined(
+                        breakdown,
+                        [
+                            "operational_cost",
+                            "operations_cost",
+                            "other_operational_cost"
+                        ],
+                        null
+                    )
+                ]
+            ];
+
+            candidates.forEach(
+                ([label, value]) => {
+
+                    const number =
+                        Number(value);
+
+                    if (
+                        value !== null &&
+                        Number.isFinite(number)
+                    ) {
+
+                        labels.push(label);
+                        values.push(number);
+
+                    }
+
+                }
+            );
+
+        }
+
+        if (!labels.length) {
+
+            Plotly.purge(element);
+            return;
+
+        }
+
+        const layout =
+            commonLayout();
+
+        layout.height = 370;
+
+        layout.showlegend =
+            true;
+
+        layout.margin = {
+            l: 20,
+            r: 20,
+            t: 20,
+            b: 20
+        };
+
+        Plotly.react(
+            element,
+            [
+                {
+                    labels: labels,
+                    values: values,
+                    type: "pie",
+                    hole: 0.55,
+
+                    textinfo:
+                        "label+percent",
+
+                    hovertemplate:
+                        "%{label}<br>₹%{value:,.2f}<br>%{percent}<extra></extra>"
+                }
+            ],
+            layout,
+            plotConfig
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost breakdown failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST HOURLY PATTERN
+   ============================================================ */
+
+async function loadCostHourlyPattern() {
+
+    try {
+
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/hourly-pattern"
+                )
+            );
+
+        const rows =
+            extractArray(
+                response,
+                [
+                    "hourly_pattern",
+                    "pattern",
+                    "hours",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+        const element =
+            document.getElementById(
+                "costHourlyChart"
+            );
+
+        if (
+            !element ||
+            typeof Plotly === "undefined"
+        ) {
+            return;
+        }
+
+        if (!rows.length) {
+
+            Plotly.purge(element);
+            return;
+
+        }
+
+        const hours =
+            rows.map(
+                row =>
+                    firstDefined(
+                        row,
+                        [
+                            "hour",
+                            "hour_label",
+                            "time"
+                        ],
+                        ""
+                    )
+            );
+
+        const costs =
+            rows.map(
+                row =>
+                    Number(
+                        firstDefined(
+                            row,
+                            [
+                                "average_cost",
+                                "avg_cost",
+                                "total_cost",
+                                "cost"
+                            ],
+                            0
+                        )
+                    )
+            );
+
+        const layout =
+            commonLayout();
+
+        layout.height = 370;
+        layout.showlegend = false;
+
+        layout.yaxis = {
+            ...layout.yaxis,
+            title: "Average Cost (₹)"
+        };
+
+        Plotly.react(
+            element,
+            [
+                {
+                    x: hours,
+                    y: costs,
+                    type: "scatter",
+                    mode: "lines+markers",
+
+                    line: {
+                        color: COLORS.hvac,
+                        width: 2
+                    },
+
+                    marker: {
+                        color: COLORS.teal,
+                        size: 6
+                    },
+
+                    hovertemplate:
+                        "Hour: %{x}<br>Average Cost: ₹%{y:,.2f}<extra></extra>"
+                }
+            ],
+            layout,
+            plotConfig
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost hourly pattern failed:",
+            error
+        );
+
+    }
+
+}
+/* ============================================================
+   COST SAVINGS OPPORTUNITIES
+   ============================================================ */
+
+async function loadCostSavings() {
 
     const container =
         document.getElementById(
-            elementId
+            "costSavingsTable"
         );
 
     if (!container) {
         return;
     }
 
-    if (!alerts.length) {
+    try {
 
-        showEmpty(
-            elementId,
-            emptyTitle,
-            emptyMessage
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/savings"
+                )
+            );
+
+        const rows =
+            extractArray(
+                response,
+                [
+                    "opportunities",
+                    "savings_opportunities",
+                    "savings",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+        if (!rows.length) {
+
+            showEmpty(
+                "costSavingsTable",
+                "No Savings Opportunities",
+                "No cost optimization opportunities are currently identified."
+            );
+
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="data-table">
+
+                <thead>
+                    <tr>
+                        <th>Building</th>
+                        <th>Opportunity</th>
+                        <th>Current Cost</th>
+                        <th>Potential Savings</th>
+                        <th>Priority</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${
+                        rows
+                            .map(
+                                row => {
+
+                                    const priority =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "priority",
+                                                    "savings_priority",
+                                                    "severity"
+                                                ],
+                                                "LOW"
+                                            )
+                                        );
+
+                                    return `
+                                        <tr>
+
+                                            <td>
+                                                <span class="asset-name">
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "building_name",
+                                                                "building"
+                                                            ],
+                                                            "--"
+                                                        )
+                                                    )}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "inefficiency_type",
+                                                            "opportunity",
+                                                            "type"
+                                                        ],
+                                                        "Cost Optimization"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${currencyValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "total_cost",
+                                                            "current_cost",
+                                                            "cost"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${currencyValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "potential_savings",
+                                                            "savings",
+                                                            "savings_amount"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span class="priority-badge ${priorityClass(priority)}">
+                                                    ${escapeHTML(priority)}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "recommendation",
+                                                            "recommended_action",
+                                                            "message"
+                                                        ],
+                                                        "Review the identified cost driver."
+                                                    )
+                                                )}
+                                            </td>
+
+                                        </tr>
+                                    `;
+
+                                }
+                            )
+                            .join("")
+                    }
+
+                </tbody>
+
+            </table>
+        `;
+
+    } catch (error) {
+
+        console.error(
+            "Cost savings failed:",
+            error
         );
 
-        return;
+        showError(
+            "costSavingsTable",
+            "Unable to load cost savings opportunities."
+        );
 
     }
 
-    container.innerHTML =
-        alerts
-            .slice(0, 30)
-            .map(
-                alert => {
+}
 
-                    const severity =
-                        normalizeStatus(
-                            firstDefined(
-                                alert,
-                                [
-                                    "priority",
-                                    "severity",
-                                    "level",
-                                    "risk_level"
-                                ],
-                                "LOW"
+
+/* ============================================================
+   COST INEFFICIENCIES
+   ============================================================ */
+
+async function loadCostInefficiencies() {
+
+    const container =
+        document.getElementById(
+            "costInefficiencyTable"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/inefficiencies",
+                    {
+                        limit: 30
+                    }
+                )
+            );
+
+        const rows =
+            extractArray(
+                response,
+                [
+                    "inefficiencies",
+                    "cost_inefficiencies",
+                    "records",
+                    "data",
+                    "items"
+                ]
+            );
+
+        if (!rows.length) {
+
+            showEmpty(
+                "costInefficiencyTable",
+                "No Cost Inefficiencies",
+                "No significant cost inefficiencies are currently identified."
+            );
+
+            return;
+        }
+
+        container.innerHTML = `
+            <table class="data-table">
+
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Building</th>
+                        <th>Issue</th>
+                        <th>Actual Cost</th>
+                        <th>Expected Cost</th>
+                        <th>Variance</th>
+                        <th>Savings</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${
+                        rows
+                            .slice(0, 30)
+                            .map(
+                                row => {
+
+                                    const priority =
+                                        normalizeStatus(
+                                            firstDefined(
+                                                row,
+                                                [
+                                                    "savings_priority",
+                                                    "priority",
+                                                    "severity"
+                                                ],
+                                                "LOW"
+                                            )
+                                        );
+
+                                    return `
+                                        <tr>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    timestampValue(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "timestamp",
+                                                                "created_at",
+                                                                "date"
+                                                            ],
+                                                            ""
+                                                        )
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span class="asset-name">
+                                                    ${escapeHTML(
+                                                        firstDefined(
+                                                            row,
+                                                            [
+                                                                "building_name",
+                                                                "building_id",
+                                                                "building"
+                                                            ],
+                                                            "--"
+                                                        )
+                                                    )}
+                                                </span>
+                                            </td>
+
+                                            <td>
+                                                ${escapeHTML(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "inefficiency_type",
+                                                            "issue_type",
+                                                            "type"
+                                                        ],
+                                                        "Cost Inefficiency"
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${currencyValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "total_cost",
+                                                            "actual_cost",
+                                                            "cost"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${currencyValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "expected_cost",
+                                                            "expected_total_cost"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${currencyValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "cost_variance",
+                                                            "variance",
+                                                            "variance_amount"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                ${currencyValue(
+                                                    firstDefined(
+                                                        row,
+                                                        [
+                                                            "potential_savings",
+                                                            "savings",
+                                                            "savings_amount"
+                                                        ],
+                                                        0
+                                                    )
+                                                )}
+                                            </td>
+
+                                            <td>
+                                                <span class="priority-badge ${priorityClass(priority)}">
+                                                    ${escapeHTML(priority)}
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    `;
+
+                                }
                             )
-                        );
+                            .join("")
+                    }
 
-                    const title =
-                        firstDefined(
-                            alert,
-                            [
-                                "title",
-                                "alert_type",
-                                "event_type",
-                                "asset_name",
-                                "space_name",
-                                "type"
-                            ],
-                            "Facility Alert"
-                        );
+                </tbody>
 
-                    const message =
-                        firstDefined(
-                            alert,
-                            [
-                                "message",
-                                "description",
-                                "recommendation",
-                                "reason"
-                            ],
-                            "Facility condition requires review."
-                        );
+            </table>
+        `;
 
-                    const created =
-                        firstDefined(
-                            alert,
-                            [
-                                "created_at",
-                                "timestamp",
-                                "detected_at",
-                                "event_timestamp"
-                            ],
-                            ""
-                        );
+    } catch (error) {
 
-                    return `
-                        <article class="maintenance-alert-card">
+        console.error(
+            "Cost inefficiencies failed:",
+            error
+        );
 
-                            <div class="card-topline">
+        showError(
+            "costInefficiencyTable",
+            "Unable to load cost inefficiencies."
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST OPTIMIZATION INSIGHTS
+   ============================================================ */
+
+async function loadCostInsights() {
+
+    const container =
+        document.getElementById(
+            "costInsights"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await getJSON(
+                costURL(
+                    "/api/cost/insights"
+                )
+            );
+
+        let insights =
+            extractArray(
+                response,
+                [
+                    "insights",
+                    "recommendations",
+                    "data",
+                    "items"
+                ]
+            );
+
+        if (
+            !insights.length &&
+            response &&
+            typeof response === "object"
+        ) {
+
+            insights =
+                Object.values(response)
+                    .filter(
+                        value =>
+                            typeof value === "string"
+                    );
+
+        }
+
+        if (!insights.length) {
+
+            showEmpty(
+                "costInsights",
+                "No Cost Insights",
+                "No additional cost optimization insights are currently available."
+            );
+
+            return;
+        }
+
+        container.innerHTML =
+            insights
+                .map(
+                    insight => {
+
+                        const message =
+                            typeof insight === "string"
+                                ? insight
+                                : firstDefined(
+                                    insight,
+                                    [
+                                        "message",
+                                        "insight",
+                                        "recommendation",
+                                        "description"
+                                    ],
+                                    "Review current operational costs."
+                                );
+
+                        const title =
+                            typeof insight === "string"
+                                ? "Cost Optimization Insight"
+                                : firstDefined(
+                                    insight,
+                                    [
+                                        "title",
+                                        "type",
+                                        "inefficiency_type"
+                                    ],
+                                    "Cost Optimization Insight"
+                                );
+
+                        return `
+                            <article class="cost-insight-card">
 
                                 <h3 class="card-title">
                                     ${escapeHTML(title)}
                                 </h3>
 
-                                <span class="priority-badge ${priorityClass(severity)}">
-                                    ${escapeHTML(severity)}
-                                </span>
+                                <p class="card-message">
+                                    ${escapeHTML(message)}
+                                </p>
 
-                            </div>
+                            </article>
+                        `;
 
-                            ${
-                                created
-                                    ? `
-                                        <div class="card-meta">
-                                            ${escapeHTML(timestampValue(created))}
-                                        </div>
-                                    `
-                                    : ""
-                            }
+                    }
+                )
+                .join("");
 
-                            <p class="card-message">
-                                ${escapeHTML(message)}
-                            </p>
+    } catch (error) {
 
-                        </article>
-                    `;
+        console.error(
+            "Cost insights failed:",
+            error
+        );
 
-                }
+        showError(
+            "costInsights",
+            "Unable to load cost optimization insights."
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST OPTIMIZATION ALERTS
+   ============================================================ */
+
+async function loadCostAlerts() {
+
+    try {
+
+        const response =
+            await getJSON(
+                "/api/cost/alerts?limit=30"
+            );
+
+        const alerts =
+            extractArray(
+                response,
+                [
+                    "alerts",
+                    "data",
+                    "records",
+                    "items"
+                ]
+            );
+
+        renderAlertCards(
+            "costOptimizationAlerts",
+            alerts,
+            "No Cost Alerts",
+            "No cost optimization alerts are currently stored."
+        );
+
+        /*
+            Same cost alerts are also displayed in the
+            unified alert section.
+        */
+
+        renderAlertCards(
+            "costAlertsUnified",
+            alerts,
+            "No Cost Alerts",
+            "No active cost optimization alerts."
+        );
+
+        setText(
+            "costAlertsMetric",
+            integerValue(
+                firstDefined(
+                    response,
+                    [
+                        "total",
+                        "count",
+                        "alert_count"
+                    ],
+                    alerts.length
+                )
             )
-            .join("");
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cost alerts failed:",
+            error
+        );
+
+        showError(
+            "costOptimizationAlerts",
+            "Unable to load cost optimization alerts."
+        );
+
+        showError(
+            "costAlertsUnified",
+            "Unable to load cost optimization alerts."
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   COST DATA REFRESH
+   ============================================================ */
+
+async function refreshCostData() {
+
+    await Promise.allSettled(
+        [
+            loadCostSummary(),
+            loadCostDatabaseStatus(),
+            loadCostDailyTrend(),
+            loadCostBuildingComparison(),
+            loadCostBreakdown(),
+            loadCostHourlyPattern(),
+            loadCostSavings(),
+            loadCostInefficiencies(),
+            loadCostInsights(),
+            loadCostAlerts()
+        ]
+    );
 
 }
 
@@ -4987,6 +7190,10 @@ async function refreshSecurityData() {
 }
 
 
+/* ============================================================
+   COMPLETE DASHBOARD REFRESH
+   ============================================================ */
+
 async function refreshDashboard(
     runAgents = false
 ) {
@@ -4996,22 +7203,22 @@ async function refreshDashboard(
         await Promise.allSettled(
             [
                 runEnergyAgent(),
-                runMaintenanceAgent()
+                runMaintenanceAgent(),
+                runCostOptimizationAgent()
             ]
         );
 
     }
-
 
     await Promise.allSettled(
         [
             refreshEnergyData(),
             refreshMaintenanceData(),
             refreshOccupancyData(),
-            refreshSecurityData()
+            refreshSecurityData(),
+            refreshCostData()
         ]
     );
-
 
     setText(
         "lastUpdated",
@@ -5035,21 +7242,28 @@ function resizeCharts() {
         return;
     }
 
-
     [
         "energyChart",
         "hvacChart",
         "occupancyChart",
         "buildingChart",
+
         "maintenanceHealthChart",
         "maintenanceBuildingChart",
+
         "occupancyHourlyChart",
         "occupancyBuildingChart",
         "spaceUtilizationChart",
         "peakHoursChart",
         "occupancyHeatmapChart",
+
         "securityAccessPointChart",
-        "securityHourlyChart"
+        "securityHourlyChart",
+
+        "costDailyTrendChart",
+        "costBuildingChart",
+        "costBreakdownChart",
+        "costHourlyChart"
     ].forEach(
         chartId => {
 

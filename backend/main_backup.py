@@ -171,28 +171,6 @@ from backend.security_service import (
 
 
 # ============================================================
-# MILESTONE 4 - COST OPTIMIZATION SERVICE
-# ============================================================
-
-from backend.cost_service import (
-    synchronise_cost_data,
-    get_cost_summary,
-    get_cost_breakdown_data,
-    get_cost_building_comparison,
-    get_cost_daily_trend,
-    get_cost_hourly_pattern,
-    get_cost_inefficiency_data,
-    get_cost_savings_opportunities,
-    get_high_cost_data,
-    get_cost_insights,
-    run_cost_optimization_agent,
-    get_stored_cost_records,
-    get_stored_cost_alerts,
-    get_cost_database_status,
-)
-
-
-# ============================================================
 # PROJECT PATHS
 # ============================================================
 
@@ -237,9 +215,9 @@ app = FastAPI(
     title="FacilityOps AI",
     description=(
         "Agentic Facility Operations, Energy, Maintenance, "
-        "Occupancy, Security and Cost Optimization Platform"
+        "Occupancy and Security Intelligence Platform"
     ),
-    version="4.0.0",
+    version="3.0.0",
 )
 
 
@@ -513,23 +491,6 @@ def startup_event():
             "database_rows": 0,
         }
 
-    # ========================================================
-    # MILESTONE 4
-    # ========================================================
-
-    try:
-        cost_sync = synchronise_cost_data()
-    except Exception as error:
-        print(
-            "Cost data synchronisation warning:",
-            error
-        )
-        cost_sync = {
-            "dataset_records": 0,
-            "inserted_records": 0,
-            "database": {},
-        }
-
     maintenance_metrics = (
         get_maintenance_model_metrics()
     )
@@ -718,23 +679,6 @@ def startup_event():
         )
     )
 
-    print()
-
-
-    print(
-        "MILESTONE 4 - COST OPTIMIZATION"
-    )
-    print(
-        "-------------------------------"
-    )
-    print(
-        "Cost dataset records:",
-        cost_sync.get("dataset_records", 0)
-    )
-    print(
-        "Cost records newly stored:",
-        cost_sync.get("inserted_records", 0)
-    )
     print()
 
 
@@ -2745,144 +2689,6 @@ async def security_alert_status_api(
 
 
 # ============================================================
-# MILESTONE 4 - COST OPTIMIZATION
-# ============================================================
-
-@app.get("/api/cost/summary")
-def cost_summary_api(request: Request, building: str = ""):
-    require_user(request)
-    return get_cost_summary(
-        building=building if building else None
-    )
-
-
-@app.get("/api/cost/breakdown")
-def cost_breakdown_api(request: Request, building: str = ""):
-    require_user(request)
-    return get_cost_breakdown_data(
-        building=building if building else None
-    )
-
-
-@app.get("/api/cost/buildings")
-def cost_buildings_api(request: Request):
-    require_user(request)
-    return get_cost_building_comparison()
-
-
-@app.get("/api/cost/daily-trend")
-def cost_daily_trend_api(request: Request, building: str = ""):
-    require_user(request)
-    return get_cost_daily_trend(
-        building=building if building else None
-    )
-
-
-@app.get("/api/cost/hourly-pattern")
-def cost_hourly_pattern_api(request: Request, building: str = ""):
-    require_user(request)
-    return get_cost_hourly_pattern(
-        building=building if building else None
-    )
-
-
-@app.get("/api/cost/inefficiencies")
-def cost_inefficiencies_api(
-    request: Request,
-    building: str = "",
-    limit: int = 50,
-):
-    require_user(request)
-    limit = max(1, min(limit, 500))
-    return get_cost_inefficiency_data(
-        building=building if building else None,
-        limit=limit,
-    )
-
-
-@app.get("/api/cost/savings")
-def cost_savings_api(request: Request, building: str = ""):
-    require_user(request)
-    return get_cost_savings_opportunities(
-        building=building if building else None
-    )
-
-
-@app.get("/api/cost/high-cost")
-def cost_high_cost_api(
-    request: Request,
-    building: str = "",
-    limit: int = 20,
-):
-    require_user(request)
-    limit = max(1, min(limit, 500))
-    return get_high_cost_data(
-        building=building if building else None,
-        limit=limit,
-    )
-
-
-@app.get("/api/cost/insights")
-def cost_insights_api(request: Request, building: str = ""):
-    require_user(request)
-    return get_cost_insights(
-        building=building if building else None
-    )
-
-
-@app.get("/api/cost/records")
-def cost_records_api(
-    request: Request,
-    building: str = "",
-    limit: int = 100,
-):
-    require_user(request)
-    limit = max(1, min(limit, 5000))
-    return get_stored_cost_records(
-        building=building if building else None,
-        limit=limit,
-    )
-
-
-@app.get("/api/cost/alerts")
-def cost_alerts_api(
-    request: Request,
-    limit: int = 50,
-    status: str = "",
-):
-    require_user(request)
-    limit = max(1, min(limit, 500))
-    return get_stored_cost_alerts(
-        limit=limit,
-        status=status.upper() if status else None,
-    )
-
-
-@app.get("/api/cost/database-status")
-def cost_database_status_api(request: Request):
-    require_user(request)
-    return get_cost_database_status()
-
-
-@app.post("/api/cost/agent/run")
-def cost_agent_run_api(
-    request: Request,
-    building: str = "",
-):
-    require_user(request)
-    return run_cost_optimization_agent(
-        building=building if building else None,
-        store_alerts=True,
-    )
-
-
-@app.post("/api/cost/sync")
-def cost_sync_api(request: Request):
-    require_user(request)
-    return synchronise_cost_data()
-
-
-# ============================================================
 # SYSTEM HEALTH
 # ============================================================
 
@@ -2911,13 +2717,6 @@ def health():
 
         maintenance_database_ready = False
 
-    try:
-        cost_database = get_cost_database_status()
-        cost_database_ready = True
-    except Exception:
-        cost_database = {}
-        cost_database_ready = False
-
     return {
         "status":
             "healthy",
@@ -2931,7 +2730,6 @@ def health():
                 "Predictive Maintenance",
                 "Occupancy Intelligence",
                 "Security Intelligence",
-                "Cost Optimization",
             ],
 
         "energy_monitoring_agent":
@@ -2951,9 +2749,6 @@ def health():
             "ACTIVE",
 
         "security_agent":
-            "ACTIVE",
-
-        "cost_optimization_agent":
             "ACTIVE",
 
         "maintenance_prediction_model":
@@ -2984,11 +2779,4 @@ def health():
 
         "maintenance_database":
             maintenance_database,
-
-        "cost_database":
-            (
-                cost_database
-                if cost_database_ready
-                else {"status": "ERROR"}
-            ),
     }

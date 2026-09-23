@@ -147,6 +147,16 @@
             <a
                 href="#"
                 class="nav-item"
+                data-section-target="costOptimizationSection"
+            >
+                <span>₹</span>
+                Cost Optimization
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-item"
                 data-section-target="issueCentreSection"
             >
                 <span>⚠</span>
@@ -707,10 +717,7 @@
 
             </section>
 
-        </section>
-
-
-        <!-- =====================================================
+        </section>        <!-- =====================================================
              ASSET MONITORING
              ===================================================== -->
 
@@ -1354,10 +1361,7 @@
 
             </section>
 
-        </section>
-
-
-        <!-- =====================================================
+        </section>        <!-- =====================================================
              SPACE UTILIZATION
              ===================================================== -->
 
@@ -1899,10 +1903,7 @@
 
             </section>
 
-        </section>
-
-
-        <!-- =====================================================
+        </section>        <!-- =====================================================
              ISSUE CENTRE
              ===================================================== -->
 
@@ -1984,6 +1985,433 @@
 
 
         <!-- =====================================================
+             COST OPTIMIZATION
+             ===================================================== -->
+
+        <section
+            id="costOptimizationSection"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <span class="panel-label">
+                    FACILITY COST INTELLIGENCE
+                </span>
+
+                <h2>
+                    Cost Optimization
+                </h2>
+
+                <p>
+                    Analyse facility operating costs, identify
+                    inefficiencies, estimate potential savings and
+                    support resource allocation decisions.
+                </p>
+
+            </div>
+
+
+            <!-- COST METRICS -->
+
+            <section class="metric-grid">
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ₹
+                    </div>
+
+                    <div>
+                        <span>
+                            Operational Cost
+                        </span>
+
+                        <h3 id="costTotalMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            total recorded cost
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ◎
+                    </div>
+
+                    <div>
+                        <span>
+                            Expected Cost
+                        </span>
+
+                        <h3 id="costExpectedMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            expected operating cost
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ↕
+                    </div>
+
+                    <div>
+                        <span>
+                            Cost Variance
+                        </span>
+
+                        <h3 id="costVarianceMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            actual vs expected
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        ↓
+                    </div>
+
+                    <div>
+                        <span>
+                            Potential Savings
+                        </span>
+
+                        <h3 id="costSavingsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            optimization opportunity
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card">
+
+                    <div class="metric-icon">
+                        !
+                    </div>
+
+                    <div>
+                        <span>
+                            Cost Inefficiencies
+                        </span>
+
+                        <h3 id="costInefficiencyMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            identified records
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="metric-card alert-card">
+
+                    <div class="metric-icon">
+                        ⚠
+                    </div>
+
+                    <div>
+                        <span>
+                            Cost Alerts
+                        </span>
+
+                        <h3 id="costAlertsMetric">
+                            --
+                        </h3>
+
+                        <small>
+                            optimization alerts
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- DAILY COST + BUILDING COMPARISON -->
+
+            <section class="chart-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                COST TREND
+                            </span>
+
+                            <h2>
+                                Daily Operational Cost
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="costDailyTrendChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                BUILDING COST ANALYSIS
+                            </span>
+
+                            <h2>
+                                Building Cost Comparison
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="costBuildingChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- BREAKDOWN + HOURLY PATTERN -->
+
+            <section class="chart-grid panel-spacing">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                EXPENDITURE ANALYSIS
+                            </span>
+
+                            <h2>
+                                Cost Breakdown
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="costBreakdownChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="panel-label">
+                                HOURLY COST PATTERN
+                            </span>
+
+                            <h2>
+                                Cost by Hour
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div
+                        id="costHourlyChart"
+                        class="chart"
+                    ></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- SAVINGS OPPORTUNITIES -->
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            RESOURCE OPTIMIZATION
+                        </span>
+
+                        <h2>
+                            Savings Opportunities
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="costSavingsTable"
+                    class="table-wrapper"
+                >
+
+                    <div class="placeholder-panel">
+                        <h3>Loading Savings Opportunities</h3>
+                        <p>
+                            Analysing facility operating costs and
+                            potential savings...
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- COST INEFFICIENCIES -->
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            COST MONITORING
+                        </span>
+
+                        <h2>
+                            Cost Inefficiencies
+                        </h2>
+                    </div>
+
+                    <span class="live-chip">
+                        SIMULATED DATA
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="costInefficiencyTable"
+                    class="table-wrapper"
+                >
+
+                    <div class="placeholder-panel">
+                        <h3>Loading Cost Inefficiencies</h3>
+                        <p>
+                            Checking facility expenditure records...
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- COST AGENT INSIGHTS -->
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            COST OPTIMIZATION AGENT
+                        </span>
+
+                        <h2>
+                            Optimization Insights
+                        </h2>
+                    </div>
+
+                    <span class="live-chip">
+                        AGENT ACTIVE
+                    </span>
+
+                </div>
+
+
+                <div id="costInsights">
+
+                    <div class="placeholder-panel">
+                        <h3>Generating Cost Insights</h3>
+                        <p>
+                            Analysing operational expenditure and
+                            optimization opportunities...
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- COST OPTIMIZATION ALERTS -->
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            COST AGENT ALERTS
+                        </span>
+
+                        <h2>
+                            Optimization Alerts
+                        </h2>
+                    </div>
+
+                </div>
+
+
+                <div id="costOptimizationAlerts">
+
+                    <div class="placeholder-panel">
+                        <h3>Loading Cost Alerts</h3>
+                        <p>
+                            Cost optimization alerts will appear here.
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>        <!-- =====================================================
              UNIFIED ALERTS
              ===================================================== -->
 
@@ -2003,12 +2431,15 @@
                 </h2>
 
                 <p>
-                    Review energy, equipment, occupancy and security
-                    alerts from one operational centre.
+                    Review energy, equipment, occupancy, security
+                    and cost optimization alerts from one operational
+                    centre.
                 </p>
 
             </div>
 
+
+            <!-- ENERGY ALERTS -->
 
             <section class="panel">
 
@@ -2036,6 +2467,8 @@
             </section>
 
 
+            <!-- MAINTENANCE ALERTS -->
+
             <section class="panel panel-spacing">
 
                 <div class="panel-header">
@@ -2055,12 +2488,16 @@
                 <div id="maintenanceAlerts">
                     <div class="placeholder-panel">
                         <h3>Loading Maintenance Alerts</h3>
-                        <p>Equipment maintenance alerts will appear here.</p>
+                        <p>
+                            Equipment maintenance alerts will appear here.
+                        </p>
                     </div>
                 </div>
 
             </section>
 
+
+            <!-- OCCUPANCY ALERTS -->
 
             <section class="panel panel-spacing">
 
@@ -2081,12 +2518,16 @@
                 <div id="occupancyAlerts">
                     <div class="placeholder-panel">
                         <h3>Loading Occupancy Alerts</h3>
-                        <p>Occupancy alerts will appear here.</p>
+                        <p>
+                            Occupancy alerts will appear here.
+                        </p>
                     </div>
                 </div>
 
             </section>
 
+
+            <!-- SECURITY ALERTS -->
 
             <section class="panel panel-spacing">
 
@@ -2107,14 +2548,52 @@
                 <div id="securityAlerts">
                     <div class="placeholder-panel">
                         <h3>Loading Security Alerts</h3>
-                        <p>Security alerts will appear here.</p>
+                        <p>
+                            Security alerts will appear here.
+                        </p>
                     </div>
+                </div>
+
+            </section>
+
+
+            <!-- COST OPTIMIZATION ALERTS -->
+
+            <section class="panel panel-spacing">
+
+                <div class="panel-header">
+
+                    <div>
+                        <span class="panel-label">
+                            COST OPTIMIZATION
+                        </span>
+
+                        <h2>
+                            Cost Optimization Alerts
+                        </h2>
+                    </div>
+
+                </div>
+
+                <div id="costAlertsUnified">
+
+                    <div class="placeholder-panel">
+                        <h3>Loading Cost Optimization Alerts</h3>
+                        <p>
+                            Cost optimization alerts will appear here.
+                        </p>
+                    </div>
+
                 </div>
 
             </section>
 
         </section>
 
+
+        <!-- =====================================================
+             FOOTER
+             ===================================================== -->
 
         <footer>
             FacilityOps AI · Smart Facility Operations &amp; Optimization
@@ -2161,15 +2640,23 @@ document.addEventListener(
                 "hvacChart",
                 "occupancyChart",
                 "buildingChart",
+
                 "maintenanceHealthChart",
                 "maintenanceBuildingChart",
+
                 "occupancyHourlyChart",
                 "occupancyBuildingChart",
                 "spaceUtilizationChart",
                 "peakHoursChart",
                 "occupancyHeatmapChart",
+
                 "securityAccessPointChart",
-                "securityHourlyChart"
+                "securityHourlyChart",
+
+                "costDailyTrendChart",
+                "costBuildingChart",
+                "costBreakdownChart",
+                "costHourlyChart"
 
             ];
 

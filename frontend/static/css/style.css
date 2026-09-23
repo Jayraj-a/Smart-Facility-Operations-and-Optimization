@@ -1307,7 +1307,11 @@ button {
 #occupancyHourlyChart,
 #securityAccessChart,
 #securityBuildingChart,
-#securityHourlyChart {
+#securityHourlyChart,
+#costDailyTrendChart,
+#costBuildingChart,
+#costBreakdownChart,
+#costHourlyChart {
     width: 100% !important;
 
     min-width: 0;
@@ -1523,7 +1527,11 @@ button {
 #occupancyAlerts,
 #overcrowdingEvents,
 #securityAlerts,
-#unauthorizedEvents {
+#unauthorizedEvents,
+#costSavingsTable,
+#costInefficiencyTable,
+#costInsights,
+#costOptimizationAlerts {
     width: 100%;
 }
 
@@ -1532,7 +1540,9 @@ button {
 .maintenance-alert-card,
 .work-order-card,
 .occupancy-alert-card,
-.security-alert-card {
+.security-alert-card,
+.cost-alert-card,
+.cost-insight-card {
     width: 100%;
 
     padding: 14px;
@@ -1552,7 +1562,9 @@ button {
 .maintenance-alert-card:last-child,
 .work-order-card:last-child,
 .occupancy-alert-card:last-child,
-.security-alert-card:last-child {
+.security-alert-card:last-child,
+.cost-alert-card:last-child,
+.cost-insight-card:last-child {
     margin-bottom: 0;
 }
 

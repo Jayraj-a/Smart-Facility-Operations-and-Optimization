@@ -592,6 +592,100 @@ def initialise_monitoring_database():
             """
         )
 
+        # ====================================================
+        # MILESTONE 4
+        # COST REPORTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cost_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                cost_record_id TEXT NOT NULL UNIQUE,
+
+                facility_id TEXT,
+                facility_name TEXT,
+
+                building_id TEXT,
+                building_name TEXT,
+
+                timestamp TEXT NOT NULL,
+
+                occupancy INTEGER,
+                electricity_kwh REAL,
+                hvac_kwh REAL,
+                lighting_kwh REAL,
+                water_liters REAL,
+
+                electricity_cost REAL,
+                water_cost REAL,
+                maintenance_cost REAL,
+                security_cost REAL,
+                operational_cost REAL,
+
+                total_cost REAL,
+                expected_cost REAL,
+                cost_variance REAL,
+                cost_variance_percent REAL,
+                potential_savings REAL,
+                cost_per_occupant REAL,
+
+                inefficiency_type TEXT,
+                cost_status TEXT,
+                savings_priority TEXT,
+                is_cost_inefficiency INTEGER DEFAULT 0,
+
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+        # ====================================================
+        # MILESTONE 4
+        # COST OPTIMIZATION ALERTS
+        # ====================================================
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cost_optimization_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                cost_record_id TEXT NOT NULL,
+                source_timestamp TEXT,
+
+                facility_id TEXT,
+                facility_name TEXT,
+
+                building_id TEXT,
+                building_name TEXT,
+
+                alert_type TEXT DEFAULT 'COST_OPTIMIZATION',
+                inefficiency_type TEXT,
+                severity TEXT,
+
+                total_cost REAL,
+                expected_cost REAL,
+                cost_variance REAL,
+                potential_savings REAL,
+                efficiency_score REAL,
+
+                title TEXT NOT NULL,
+                message TEXT,
+                recommended_action TEXT,
+
+                status TEXT DEFAULT 'OPEN',
+                created_at TEXT NOT NULL,
+
+                UNIQUE(
+                    cost_record_id,
+                    alert_type,
+                    title
+                )
+            )
+            """
+        )
+
         connection.commit()
 
     finally:
@@ -4027,6 +4121,401 @@ def get_milestone3_database_counts():
             counts[table] = int(
                 row["total"]
             )
+
+        return counts
+
+    finally:
+        connection.close()
+
+# ============================================================
+# MILESTONE 4
+# COST REPORT HELPERS
+# ============================================================
+
+def _cost_report_values(
+    record,
+    created_at,
+):
+    return (
+        str(record.get("cost_record_id", "")),
+        str(record.get("facility_id", "")),
+        str(record.get("facility_name", "")),
+        str(record.get("building_id", "")),
+        str(record.get("building_name", "")),
+        str(record.get("timestamp", "")),
+        safe_int(record.get("occupancy")),
+        safe_float(record.get("electricity_kwh")),
+        safe_float(record.get("hvac_kwh")),
+        safe_float(record.get("lighting_kwh")),
+        safe_float(record.get("water_liters")),
+        safe_float(record.get("electricity_cost")),
+        safe_float(record.get("water_cost")),
+        safe_float(record.get("maintenance_cost")),
+        safe_float(record.get("security_cost")),
+        safe_float(record.get("operational_cost")),
+        safe_float(record.get("total_cost")),
+        safe_float(record.get("expected_cost")),
+        safe_float(record.get("cost_variance")),
+        safe_float(record.get("cost_variance_percent")),
+        safe_float(record.get("potential_savings")),
+        safe_float(record.get("cost_per_occupant")),
+        str(record.get("inefficiency_type", "NONE")),
+        str(record.get("cost_status", "NORMAL")),
+        str(record.get("savings_priority", "NORMAL")),
+        bool_int(record.get("is_cost_inefficiency", 0)),
+        created_at,
+    )
+
+
+_COST_REPORT_INSERT = """
+    INSERT OR IGNORE INTO cost_reports (
+        cost_record_id,
+        facility_id,
+        facility_name,
+        building_id,
+        building_name,
+        timestamp,
+        occupancy,
+        electricity_kwh,
+        hvac_kwh,
+        lighting_kwh,
+        water_liters,
+        electricity_cost,
+        water_cost,
+        maintenance_cost,
+        security_cost,
+        operational_cost,
+        total_cost,
+        expected_cost,
+        cost_variance,
+        cost_variance_percent,
+        potential_savings,
+        cost_per_occupant,
+        inefficiency_type,
+        cost_status,
+        savings_priority,
+        is_cost_inefficiency,
+        created_at
+    )
+    VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?
+    )
+"""
+
+
+# ============================================================
+# MILESTONE 4
+# SAVE COST REPORT
+# ============================================================
+
+def save_cost_report(record):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            _COST_REPORT_INSERT,
+            _cost_report_values(
+                record,
+                datetime.now().isoformat(),
+            ),
+        )
+
+        connection.commit()
+
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 4
+# BATCH SAVE COST REPORTS
+# ============================================================
+
+def save_cost_reports_batch(records):
+    inserted = 0
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+        now = datetime.now().isoformat()
+
+        for record in records:
+            cursor.execute(
+                _COST_REPORT_INSERT,
+                _cost_report_values(
+                    record,
+                    now,
+                ),
+            )
+
+            if cursor.rowcount > 0:
+                inserted += 1
+
+        connection.commit()
+        return inserted
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 4
+# GET COST REPORTS
+# ============================================================
+
+def get_cost_reports(
+    building=None,
+    inefficiency_type=None,
+    limit=500,
+):
+    connection = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM cost_reports
+            WHERE 1 = 1
+        """
+        params = []
+
+        if building:
+            query += " AND building_name = ?"
+            params.append(building)
+
+        if inefficiency_type:
+            query += " AND inefficiency_type = ?"
+            params.append(inefficiency_type)
+
+        query += """
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """
+        params.append(int(limit))
+
+        rows = connection.execute(
+            query,
+            params,
+        ).fetchall()
+
+        return _rows_to_dicts(rows)
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 4
+# CREATE COST OPTIMIZATION ALERT
+# ============================================================
+
+def create_cost_optimization_alert(alert):
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        source_timestamp = str(
+            alert.get(
+                "source_timestamp",
+                alert.get("timestamp", ""),
+            )
+        )
+
+        inefficiency_type = str(
+            alert.get("inefficiency_type", "NONE")
+        )
+
+        title = str(
+            alert.get(
+                "title",
+                f"Cost Optimization - {inefficiency_type.replace('_', ' ').title()}",
+            )
+        )
+
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO cost_optimization_alerts (
+                cost_record_id,
+                source_timestamp,
+                facility_id,
+                facility_name,
+                building_id,
+                building_name,
+                alert_type,
+                inefficiency_type,
+                severity,
+                total_cost,
+                expected_cost,
+                cost_variance,
+                potential_savings,
+                efficiency_score,
+                title,
+                message,
+                recommended_action,
+                status,
+                created_at
+            )
+            VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?, ?
+            )
+            """,
+            (
+                str(alert.get("cost_record_id", "")),
+                source_timestamp,
+                str(alert.get("facility_id", "")),
+                str(alert.get("facility_name", "")),
+                str(alert.get("building_id", "")),
+                str(alert.get("building_name", "")),
+                str(alert.get("alert_type", "COST_OPTIMIZATION")),
+                inefficiency_type,
+                str(alert.get("severity", "MEDIUM")).upper(),
+                safe_float(alert.get("total_cost")),
+                safe_float(alert.get("expected_cost")),
+                safe_float(alert.get("cost_variance")),
+                safe_float(alert.get("potential_savings")),
+                safe_float(alert.get("efficiency_score")),
+                title,
+                str(alert.get("message", "")),
+                str(alert.get("recommended_action", "")),
+                str(alert.get("status", "OPEN")).upper(),
+                datetime.now().isoformat(),
+            ),
+        )
+
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            return None
+
+        return cursor.lastrowid
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 4
+# GET COST OPTIMIZATION ALERTS
+# ============================================================
+
+def get_cost_optimization_alerts(
+    limit=50,
+    status=None,
+    severity=None,
+):
+    connection = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM cost_optimization_alerts
+            WHERE 1 = 1
+        """
+        params = []
+
+        if status:
+            query += " AND status = ?"
+            params.append(str(status).upper())
+
+        if severity:
+            query += " AND severity = ?"
+            params.append(str(severity).upper())
+
+        query += """
+            ORDER BY created_at DESC
+            LIMIT ?
+        """
+        params.append(int(limit))
+
+        rows = connection.execute(
+            query,
+            params,
+        ).fetchall()
+
+        return _rows_to_dicts(rows)
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 4
+# UPDATE COST OPTIMIZATION ALERT STATUS
+# ============================================================
+
+def update_cost_optimization_alert_status(
+    alert_id,
+    status,
+):
+    allowed = {
+        "OPEN",
+        "INVESTIGATING",
+        "RESOLVED",
+    }
+
+    status = str(status).upper()
+
+    if status not in allowed:
+        raise ValueError(
+            "Invalid cost optimization alert status."
+        )
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            UPDATE cost_optimization_alerts
+            SET status = ?
+            WHERE id = ?
+            """,
+            (
+                status,
+                int(alert_id),
+            ),
+        )
+
+        connection.commit()
+        return cursor.rowcount > 0
+
+    finally:
+        connection.close()
+
+
+# ============================================================
+# MILESTONE 4
+# DATABASE COUNTS
+# ============================================================
+
+def get_cost_database_counts():
+    connection = get_connection()
+
+    try:
+        tables = [
+            "cost_reports",
+            "cost_optimization_alerts",
+        ]
+
+        counts = {}
+
+        for table in tables:
+            row = connection.execute(
+                f"""
+                SELECT COUNT(*) AS total
+                FROM {table}
+                """
+            ).fetchone()
+
+            counts[table] = int(row["total"])
 
         return counts
 
