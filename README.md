@@ -483,19 +483,18 @@ These are **future extensions**, not claims that every capability is already imp
 
 ---
 
-# 👨‍💻 Project Ownership
+# 📌 Project ownership
 
-This is an **individual project developed and maintained by Jayraj**.
-
-The project is focused on exploring the practical application of:
-
-* Artificial Intelligence
-* Machine Learning
-* Data Analytics
-* AI Agents
-* Backend Development
-* Automation
-* Intelligent Decision Support
+| Information           | Details                                    |
+| --------------------- | ------------------------------------------ |
+| **Project Name**      | Smart Facility Operations and Optimization |
+| **Project Type**      | Individual Project                         |
+| **Developer**         | Amjuri Jayraj                              |
+| **Primary Language**  | Python                                     |
+| **Backend Framework** | FastAPI                                    |
+| **Data Processing**   | Pandas, NumPy                              |
+| **Repository**        | GitHub                                     |
+| **Status**            | Active Development                         |
 
 ---
 
